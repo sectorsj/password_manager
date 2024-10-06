@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:passkeeper/pages/splash_screen_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:password_manager_frontend/pages/splash_screen_page.dart';
 import 'pages/registration_page.dart';
 import 'pages/login_page.dart';
 import 'pages/password_storage_page.dart';

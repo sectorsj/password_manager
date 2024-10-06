@@ -1,5 +1,5 @@
-name: passkeeper
-description: "A new Flutter project."
+name: password_manager_frontend
+description: "A Dart server for handling my passwords API requests."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -32,6 +32,7 @@ dependencies:
     sdk: flutter
   shared_preferences: ^2.0.15
   encrypt: ^5.0.1
+  http: ^0.13.3  # Для отправки HTTP запросов к серверу
 
 
   # The following adds the Cupertino Icons font to your application.
