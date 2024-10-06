@@ -1,0 +1,471 @@
+Models class examples:
+
+main\java\ru\sectorsj\models\Account.java
+main\java\ru\sectorsj\models\AccountCategory.java
+main\java\ru\sectorsj\models\Category.java
+main\java\ru\sectorsj\models\Email.java
+main\java\ru\sectorsj\models\NetworkConnection.java
+main\java\ru\sectorsj\models\User.java
+main\java\ru\sectorsj\models\Website.java
+
+----------------------------------------------------------
+Class: Account.java
+package ru.sectorsj.models;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+@Entity
+@Table(name = "accounts")
+public class Account {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    @Column(name = "account_login", nullable = false, unique = true)
+    private String accountLogin;
+
+    @Column(name = "email", nullable = false)
+    private String email;
+
+    @Column(name = "password_hash", nullable = false)
+    private String password;
+
+    @Column(name = "salt", nullable = false)
+    private String salt;
+
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<User> users;
+
+    @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Email> emails;
+
+    public Account(String accountLogin, String email, String password, String salt) {
+        this.accountLogin = accountLogin;
+        this.email = email;
+        this.password = password;
+        this.salt = salt;
+    }
+
+    @Override
+    public String toString() {
+        return "Account{" +
+                "id=" + id +
+                ", accountLogin='" + accountLogin + '\'' +
+                ", email='" + email + '\'' +
+                '}';
+    }
+}
+----------------------------------------------------------
+Class: AccountCategory.java
+package ru.sectorsj.models;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "account_categories")
+public class AccountCategory {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
+
+//    @OneToMany(mappedBy = "accountCategory", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<Website> websites;
+//
+//    @OneToMany(mappedBy = "accountCategory", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<NetworkConnection> networkConnections;
+}
+
+----------------------------------------------------------
+Class: Category.java
+package ru.sectorsj.models;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "categories")
+public class Category {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String categoryName;
+
+    private String description;
+
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AccountCategory> accountCategories;
+
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Website> websites;
+
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Email> emails;
+
+    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<NetworkConnection> networkConnections;
+}
+----------------------------------------------------------
+Class: Email.java
+package ru.sectorsj.models;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+
+@Setter
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "emails")
+public class Email {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    /*
+    Адрес электронной почты
+     */
+    @Column(name = "email_address", nullable = false, unique = true)
+    private String emailAddress;
+
+    /*
+    Хэшированный пароль
+     */
+    @Column(name = "password_hash", nullable = false)
+    private String password;
+
+    /*
+    Соль - примесь пароля
+     */
+    @Column(name = "salt", nullable = false)
+    private String salt;
+
+    /*
+    Описание почты
+     */
+    @Column(name = "email_description")
+    private String emailDescription;
+
+    /*
+    Многие к Одному - Много электронных адресов одной категории
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
+
+    /*
+    Многие к Одному - Много электронных адресов у одного пользователя
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+
+    /*
+    Многие к Одному - Много электронных адресов у одного пользовательского аккаунта
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @Fetch(FetchMode.JOIN)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
+
+    /*
+    Конструктор - почта состоит из:
+    - адреса электронной почты
+    - пароля
+    - соли
+    - описания почты
+    - категории
+    - пользователя
+    - пользовательского аккаунта
+     */
+    public Email(
+            String emailAddress,
+            String password,
+            String salt,
+            String emailDescription,
+            Category category,
+            User user,
+            Account account
+    ) {
+        this.emailAddress = emailAddress;
+        this.password = password;
+        this.salt = salt;
+        this.emailDescription = emailDescription;
+        this.category = category;
+        this.user = user;
+        this.account = account;
+    }
+
+    /*
+    Строковое представление почты:
+    Email{"id=", "emailAddress= ", "emailDescription="}
+     */
+    @Override
+    public String toString() {
+        return "Email{" +
+                "id=" + id +
+                ", emailAddress='" + emailAddress + '\'' +
+                ", emailDescription='" + emailDescription + '\'' +
+                '}';
+    }
+}
+----------------------------------------------------------
+Class: NetworkConnection.java
+package ru.sectorsj.models;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "network_connections")
+public class NetworkConnection {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Long id;
+
+    @Column(name = "connection_name", nullable = false, unique = true)
+    private String connectionName;
+
+    @Column(name = "ipv4", length = 15)
+    private String ipv4;
+
+    @Column(name = "ipv6", length = 39)
+    private String ipv6;
+
+    @Column(name = "network_login", nullable = false)
+    private String networkLogin;
+
+    @Column(name = "password_hash", nullable = false)
+    private String password;
+
+    @Column(name = "salt", nullable = false)
+    private String salt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_category_id")
+    private AccountCategory accountCategory;
+}
+----------------------------------------------------------
+Class: User.java
+package ru.sectorsj.models;
+
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@Entity
+@Table(name = "users")
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
+    private Long id;
+
+    @Column(name = "username", nullable = false, unique = true)
+    private String username;
+
+    @Column(name = "user_description")
+    private String userDescription;
+
+    @Column(name = "phone")
+    private String phone;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @Fetch(FetchMode.JOIN)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
+
+    public User(
+            String username,
+            String userDescription,
+            String phone,
+            Account account
+    ) {
+        this.username = username;
+        this.userDescription = userDescription;
+        this.phone = phone;
+        this.account = account;
+    }
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", userDescription='" + userDescription + '\'' +
+                ", phone='" + phone + '\'' +
+                '}';
+    }
+}
+
+----------------------------------------------------------
+Class: Website.java
+package ru.sectorsj.models;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@AllArgsConstructor
+@NoArgsConstructor
+@Setter
+@Getter
+@Entity
+@Table(name = "websites")
+public class Website {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
+    private Long id;
+
+    /*
+    Название сайта
+     */
+    @Column(name = "website_name", nullable = false)
+    private String websiteName;
+
+    /*
+    URL адрес сайта
+     */
+    @Column(name = "url", nullable = false)
+    private String url;
+
+    /*
+    Логин пользователя сайта
+     */
+    @Column(name = "website_login", nullable = false)
+    private String websiteLogin;
+
+    /*
+    Хэшированный пароль
+     */
+    @Column(name = "password_hash", nullable = false)
+    private String password;
+
+    /*
+    Соль - примесь пароля
+     */
+    @Column(name = "salt", nullable = false)
+    private String salt;
+
+    /*
+    Описание сайта
+     */
+    @Column(name = "website_description", nullable = false)
+    private String websiteDescription;
+
+//    @Column(name = "description")
+//    private String description;
+
+    /*
+    Многие к Одному - Много электронных адресов у одного пользовательского аккаунта
+    */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id", nullable = false)
+    private Account account;
+
+    /*
+    Многие к Одному - Много электронных адресов одной категории
+    */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
+
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "account_category_id")
+//    private AccountCategory accountCategory;
+
+
+    public Website(
+            String websiteName,
+            String url,
+            String websiteLogin,
+            String password,
+            String salt,
+            String websiteDescription,
+            Account account,
+            Category category
+    ) {
+        this.websiteName = websiteName;
+        this.url = url;
+        this.websiteLogin = websiteLogin;
+        this.password = password;
+        this.salt = salt;
+        this.websiteDescription = websiteDescription;
+        this.category = category;
+        this.account = account;
+    }
+
+    @Override
+    public String toString() {
+        return "Website{" +
+                "id=" + id +
+                ", websiteName='" + websiteName + '\'' +
+                ", url='" + url + '\'' +
+                ", websiteDescription='" + websiteDescription + '\'' +
+                ", websiteLogin='" + websiteLogin + '\'' +
+                '}';
+    }
+}
+
+----------------------------------------------------------
