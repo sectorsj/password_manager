@@ -20,7 +20,7 @@ class _LoginPageState extends State<LoginPage> {
 
     if (_usernameController.text == storedUsername &&
         _passwordController.text == storedPassword) {
-      Navigator.pushReplacementNamed(context, '/passwords');
+      Navigator.pushReplacementNamed(context, '/home-tabs');
     } else {
       setState(() {
         _loginFailed = true;
