@@ -1,3 +1,217 @@
+import 'package:dotenv/dotenv.dart';
+import 'package:postgres/postgres.dart';
+import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf_io.dart' as shelf_io;
+import 'package:shelf_router/shelf_router.dart';
+import 'package:shelf_cors_headers/shelf_cors_headers.dart';
+
+final dotenv = DotEnv();
+
+void main() async {
+
+  dotenv.load(['D:/filesEvgeniy/projects/mycoding/flutter/password_manager/password_manager_server/.env']);
+
+  // Подключение к базе данных
+  final connection = await createConnection();
+
+  // Создаем маршруты API
+  final router = Router();
+
+  // API для получения всех email для аккаунта
+  router.get('/emails/<accountId>', (Request request, String accountId) async {
+    List<List<dynamic>> results = await connection.query(
+      'SELECT * FROM emails WHERE account_id = @accountId',
+      substitutionValues: {'accountId': int.parse(accountId)},
+    );
+    return Response.ok(results.toString());
+  });
+
+  // API для добавления email
+  router.post('/emails/add', (Request request) async {
+    var data = await request.readAsString();
+    var body = Uri.splitQueryString(data);
+
+    await connection.query(
+      'INSERT INTO emails (email_address, password_hash, salt, email_description, account_id) VALUES (@address, @password, @salt, @description, @accountId)',
+      substitutionValues: {
+        'address': body['email_address'],
+        'password': body['password_hash'],
+        'salt': body['salt'],
+        'description': body['email_description'],
+        'accountId': int.parse(body['account_id']!),
+      },
+    );
+    return Response.ok('Email added successfully');
+  });
+
+  // API для получения всех сетевых подключений
+  router.get('/network-connections/<accountId>', (Request request, String accountId) async {
+    List<List<dynamic>> results = await connection.query(
+      'SELECT * FROM network_connections WHERE account_id = @accountId',
+      substitutionValues: {'accountId': int.parse(accountId)},
+    );
+    return Response.ok(results.toString());
+  });
+
+  // API для добавления сетевого подключения
+  router.post('/network-connections/add', (Request request) async {
+    var data = await request.readAsString();
+    var body = Uri.splitQueryString(data);
+
+    await connection.query(
+      'INSERT INTO network_connections (connection_name, ipv4, ipv6, network_login, password_hash, salt, account_id) VALUES (@name, @ipv4, @ipv6, @login, @password, @salt, @accountId)',
+      substitutionValues: {
+        'name': body['connection_name'],
+        'ipv4': body['ipv4'],
+        'ipv6': body['ipv6'],
+        'login': body['network_login'],
+        'password': body['password_hash'],
+        'salt': body['salt'],
+        'accountId': int.parse(body['account_id']!),
+      },
+    );
+    return Response.ok('Network connection added successfully');
+  });
+
+  // API для получения всех сайтов для аккаунта
+  router.get('/websites/<accountId>', (Request request, String accountId) async {
+    List<List<dynamic>> results = await connection.query(
+      'SELECT * FROM websites WHERE account_id = @accountId',
+      substitutionValues: {'accountId': int.parse(accountId)},
+    );
+    return Response.ok(results.toString());
+  });
+
+  // API для добавления сайта
+  router.post('/websites/add', (Request request) async {
+    var data = await request.readAsString();
+    var body = Uri.splitQueryString(data);
+
+    await connection.query(
+      'INSERT INTO websites (website_name, url, website_login, password_hash, salt, website_description, account_id) VALUES (@name, @url, @login, @password, @salt, @description, @accountId)',
+      substitutionValues: {
+        'name': body['website_name'],
+        'url': body['url'],
+        'login': body['website_login'],
+        'password': body['password_hash'],
+        'salt': body['salt'],
+        'description': body['website_description'],
+        'accountId': int.parse(body['account_id']!),
+      },
+    );
+    return Response.ok('Website added successfully');
+  });
+
+  // Настройка CORS и логирования
+  final handler = const Pipeline()
+      .addMiddleware(logRequests())  // Логирование запросов
+      .addMiddleware(corsHeaders())
+      .addHandler(router);
+
+  // Запуск сервера
+  final server = await shelf_io.serve(handler, 'localhost', 8080);
+  print('Server running at http://${server.address.host}:${server.port}');
+}
+
+// Настройка подключения к базе данных Postgres
+Future<PostgreSQLConnection> createConnection() async {
+  final connection = PostgreSQLConnection(
+    dotenv['DB_HOST']!,  // Чтение из переменных окружения
+    int.parse(dotenv['DB_PORT']!),
+    dotenv['DB_NAME']!,
+    username: dotenv['DB_USER']!,
+    password: dotenv['DB_PASSWORD']!,
+  );
+
+  await connection.open();
+  print('Connected to the database');
+  return connection;
+}
+
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';  // Для копирования пароля
+import 'package:password_manager_frontend/services/api_service.dart';
+
+class EmailsTab extends StatefulWidget {
+  const EmailsTab({Key? key}) : super(key: key);
+
+  @override
+  _EmailsTabState createState() => _EmailsTabState();
+}
+
+class _EmailsTabState extends State<EmailsTab> {
+  final ApiService apiService = ApiService();
+  List<dynamic> emails = [];
+  bool _showPassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmails();
+  }
+
+  Future<void> _loadEmails() async {
+    List<dynamic> result = await apiService.getEmailsByAccount(1);  // Пример ID аккаунта
+    setState(() {
+      emails = result;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Emails'),
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text('№')),
+            DataColumn(label: Text('Email')),
+            DataColumn(label: Text('Пароль')),
+          ],
+          rows: emails.asMap().entries.map((entry) {
+            int index = entry.key + 1;
+            var email = entry.value;
+
+            return DataRow(
+              cells: [
+                DataCell(Text(index.toString())),
+                DataCell(Text(email[1])),  // email_address
+                DataCell(Row(
+                  children: [
+                    Text(_showPassword ? email[2] : '****'), // пароль
+                    IconButton(
+                      icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () {
+                        setState(() {
+                          _showPassword = !_showPassword;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: email[2]));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Пароль скопирован')),
+                        );
+                      },
+                    ),
+                  ],
+                )),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -64,6 +278,95 @@ class _LoginPageState extends State<LoginPage> {
               child: const Text('Зарегистрироваться'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';  // Для копирования пароля
+import 'package:password_manager_frontend/services/api_service.dart';
+
+class NetworkConnectionsTab extends StatefulWidget {
+  const NetworkConnectionsTab({Key? key}) : super(key: key);
+
+  @override
+  _NetworkConnectionsTabState createState() => _NetworkConnectionsTabState();
+}
+
+class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
+  final ApiService apiService = ApiService();
+  List<dynamic> connections = [];
+  bool _showPassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNetworkConnections();
+  }
+
+  Future<void> _loadNetworkConnections() async {
+    List<dynamic> result = await apiService.getNetworkConnectionsByAccount(1);  // Пример ID аккаунта
+    setState(() {
+      connections = result;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Network Connections'),
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text('№')),
+            DataColumn(label: Text('Название')),
+            DataColumn(label: Text('IPv4')),
+            DataColumn(label: Text('IPv6')),
+            DataColumn(label: Text('Имя пользователя')),
+            DataColumn(label: Text('Пароль')),
+          ],
+          rows: connections.asMap().entries.map((entry) {
+            int index = entry.key + 1;
+            var connection = entry.value;
+
+            return DataRow(
+              cells: [
+                DataCell(Text(index.toString())),
+                DataCell(Text(connection[1])),  // connection_name
+                DataCell(Text(connection[2])),  // ipv4
+                DataCell(Text(connection[3])),  // ipv6
+                DataCell(Text(connection[4])),  // login
+                DataCell(Row(
+                  children: [
+                    Text(_showPassword ? connection[5] : '****'), // пароль
+                    IconButton(
+                      icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () {
+                        setState(() {
+                          _showPassword = !_showPassword;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: connection[5]));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Пароль скопирован')),
+                        );
+                      },
+                    ),
+                  ],
+                )),
+              ],
+            );
+          }).toList(),
         ),
       ),
     );
@@ -144,9 +447,6 @@ class _PasswordStoragePageState extends State<PasswordStoragePage> {
 }
 
 
-
-
-
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -219,9 +519,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
 }
 
 
-
-
-
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -275,3 +572,238 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
 }
 
 
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';  // Для копирования пароля
+import 'package:password_manager_frontend/services/api_service.dart';
+
+class WebsitesTab extends StatefulWidget {
+  const WebsitesTab({Key? key}) : super(key: key);
+
+  @override
+  _WebsitesTabState createState() => _WebsitesTabState();
+}
+
+class _WebsitesTabState extends State<WebsitesTab> {
+  final ApiService apiService = ApiService();
+  List<dynamic> websites = [];
+  bool _showPassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWebsites();
+  }
+
+  Future<void> _loadWebsites() async {
+    List<dynamic> result = await apiService.getWebsitesByAccount(
+        1); // Пример ID аккаунта
+    setState(() {
+      websites = result;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Websites'),
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text('№')),
+            DataColumn(label: Text('Название сайта')),
+            DataColumn(label: Text('URL')),
+            DataColumn(label: Text('Имя пользователя')),
+            DataColumn(label: Text('Email')),
+            DataColumn(label: Text('Пароль')),
+          ],
+          rows: websites
+              .asMap()
+              .entries
+              .map((entry) {
+            int index = entry.key + 1;
+            var website = entry.value;
+
+            return DataRow(
+              cells: [
+                DataCell(Text(index.toString())),
+                DataCell(Text(website[1])), // website_name
+                DataCell(Text(website[2])), // url
+                DataCell(Text(website[3])), // login
+                DataCell(Text(website[4])), // email
+                DataCell(Row(
+                  children: [
+                    Text(_showPassword ? website[5] : '****'), // пароль
+                    IconButton(
+                      icon: Icon(_showPassword ? Icons.visibility_off : Icons
+                          .visibility),
+                      onPressed: () {
+                        setState(() {
+                          _showPassword = !_showPassword;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: website[5]));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Пароль скопирован')),
+                        );
+                      },
+                    ),
+                  ],
+                )),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+class ApiService {
+  final String baseUrl = 'http://localhost:8080';
+
+  // Получить все Email для аккаунта
+  Future<List<dynamic>> getEmailsByAccount(int accountId) async {
+    final response = await http.get(Uri.parse('$baseUrl/emails/$accountId'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load emails');
+    }
+  }
+
+  // Добавить Email
+  Future<String> addEmail(String email, String password, String salt, String description, int accountId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/emails/add'),
+      body: {
+        'email_address': email,
+        'password_hash': password,
+        'salt': salt,
+        'email_description': description,
+        'account_id': accountId.toString(),
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return 'Email added successfully';
+    } else {
+      return 'Failed to add email';
+    }
+  }
+
+  // Получить все Network Connections для аккаунта
+  Future<List<dynamic>> getNetworkConnectionsByAccount(int accountId) async {
+    final response = await http.get(Uri.parse('$baseUrl/network-connections/$accountId'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load network connections');
+    }
+  }
+
+  // Добавить сетевое подключение
+  Future<String> addNetworkConnection(String name, String ipv4, String ipv6, String login, String password, String salt, int accountId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/network-connections/add'),
+      body: {
+        'connection_name': name,
+        'ipv4': ipv4,
+        'ipv6': ipv6,
+        'network_login': login,
+        'password_hash': password,
+        'salt': salt,
+        'account_id': accountId.toString(),
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return 'Network connection added successfully';
+    } else {
+      return 'Failed to add network connection';
+    }
+  }
+
+  // Получить все Websites для аккаунта
+  Future<List<dynamic>> getWebsitesByAccount(int accountId) async {
+    final response = await http.get(Uri.parse('$baseUrl/websites/$accountId'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load websites');
+    }
+  }
+
+  // Добавить Website
+  Future<String> addWebsite(String name, String url, String login, String password, String salt, String description, int accountId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/websites/add'),
+      body: {
+        'website_name': name,
+        'url': url,
+        'website_login': login,
+        'password_hash': password,
+        'salt': salt,
+        'website_description': description,
+        'account_id': accountId.toString(),
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return 'Website added successfully';
+    } else {
+      return 'Failed to add website';
+    }
+  }
+}
+
+
+
+
+import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/pages/emails_tab.dart';
+import 'package:password_manager_frontend/pages/network_connections_tab.dart';
+import 'package:password_manager_frontend/pages/splash_screen_page.dart';
+import 'package:password_manager_frontend/pages/websites_tab.dart';
+import 'pages/registration_page.dart';
+import 'pages/login_page.dart';
+import 'pages/password_storage_page.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Password Manager',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      initialRoute: '/splash',
+      routes: {
+        '/splash': (context) => const SplashScreenPage(),
+        '/login': (context) => const LoginPage(),
+        '/register': (context) => const RegistrationPage(),
+        '/passwords': (context) => const PasswordStoragePage(),
+        '/emails': (context) => const EmailsTab(),
+        '/network-connections': (context) => const NetworkConnectionsTab(),
+        '/websites': (context) => const WebsitesTab(),
+      },
+    );
+  }
+}
