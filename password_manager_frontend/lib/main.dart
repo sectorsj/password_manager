@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/pages/emails_tab.dart';
+import 'package:password_manager_frontend/pages/network_connections_tab.dart';
 import 'package:password_manager_frontend/pages/splash_screen_page.dart';
+import 'package:password_manager_frontend/pages/websites_tab.dart';
 import 'pages/registration_page.dart';
 import 'pages/login_page.dart';
 import 'pages/password_storage_page.dart';
@@ -24,6 +27,9 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegistrationPage(),
         '/passwords': (context) => const PasswordStoragePage(),
+        '/emails': (context) => const EmailsTab(),
+        '/network-connections': (context) => const NetworkConnectionsTab(),
+        '/websites': (context) => const WebsitesTab(),
       },
     );
   }

@@ -5,9 +5,11 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_cors_headers/shelf_cors_headers.dart';
 
-final dotenv = DotEnv()..load();
+final dotenv = DotEnv();
 
 void main() async {
+
+  dotenv.load(['D:/filesEvgeniy/projects/mycoding/flutter/password_manager/password_manager_server/.env']);
 
   // Подключение к базе данных
   final connection = await createConnection();
