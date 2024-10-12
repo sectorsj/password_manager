@@ -1,30 +1,34 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:password_manager_frontend/pages/home_page.dart';
+import 'package:password_manager_frontend/pages/registration_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+class LoginPage extends StatelessWidget {
+  LoginPage({Key? key}) : super(key: key);
 
-  @override
-  _LoginPageState createState() => _LoginPageState();
-}
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
-class _LoginPageState extends State<LoginPage> {
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _loginFailed = false;
+  Future<void> _login(BuildContext context) async {
+    String username = usernameController.text.trim();
+    String password = passwordController.text.trim();
 
-  Future<void> _login() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? storedUsername = prefs.getString('username');
-    String? storedPassword = prefs.getString('password');
+    var url = Uri.parse('http://localhost:8080/login');
+    var response = await http.post(url, body: {
+      'username': username,
+      'password': password,
+    });
 
-    if (_usernameController.text == storedUsername &&
-        _passwordController.text == storedPassword) {
-      Navigator.pushReplacementNamed(context, '/home-tabs');
+    if (response.statusCode == 200) {
+      print('Login successful. Server response: ${response.body}');
+      // Login successful, navigate to home screen or tabs screen
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
     } else {
-      setState(() {
-        _loginFailed = true;
-      });
+      print('Login failed. Server response code: ${response.statusCode}, message: ${response.body}');
+      // Show error message or handle invalid credentials
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Не верное имя пользователя или пароль'),
+      ));
     }
   }
 
@@ -32,36 +36,32 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Вход'),
+        title: const Text('Login'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          children: [
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
             TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Имя пользователя'),
+              controller: usernameController,
+              decoration: const InputDecoration(labelText: 'Username'),
             ),
             TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Пароль'),
+              controller: passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
             const SizedBox(height: 20),
-            if (_loginFailed)
-              const Text(
-                'Неверное имя пользователя или пароль',
-                style: TextStyle(color: Colors.red),
-              ),
             ElevatedButton(
-              onPressed: _login,
-              child: const Text('Войти'),
+              onPressed: () => _login(context),
+              child: const Text('Login'),
             ),
             TextButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/register');
+                Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationPage()));
               },
-              child: const Text('Зарегистрироваться'),
+              child: const Text('Register'),
             ),
           ],
         ),

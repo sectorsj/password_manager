@@ -1,30 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
-class RegistrationPage extends StatefulWidget {
-  const RegistrationPage({Key? key}) : super(key: key);
+class RegistrationPage extends StatelessWidget {
+  RegistrationPage({Key? key}) : super(key: key);
 
-  @override
-  _RegistrationPageState createState() => _RegistrationPageState();
-}
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
 
-class _RegistrationPageState extends State<RegistrationPage> {
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  bool _passwordsMatch = true;
+  Future<void> _register(BuildContext context) async {
+    String username = usernameController.text.trim();
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+    String confirmPassword = confirmPasswordController.text.trim();
 
-  Future<void> _register() async {
-    if (_passwordController.text == _confirmPasswordController.text) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('username', _usernameController.text);
-      await prefs.setString('password', _passwordController.text);
+    print('Registering with username: $username, email: $email, password: $password');
 
-      Navigator.pop(context);  // Возвращаемся на страницу логина
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Passwords do not match'),
+      ));
+      return;
+    }
+
+    var url = Uri.parse('http://localhost:8080/register');
+    var response = await http.post(url, body: {
+      'username': username,
+      'email': email,
+      'password': password,
+    });
+
+    if (response.statusCode == 200) {
+      print('Registration successful. Server response: ${response.body}');
+      Navigator.pop(context); // Registration successful, navigate back to login screen
     } else {
-      setState(() {
-        _passwordsMatch = false;
-      });
+      print('Registration failed. Server response code: ${response.statusCode}, message: ${response.body}');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Registration failed. Username or email already in use.'),
+      ));
     }
   }
 
@@ -32,35 +46,35 @@ class _RegistrationPageState extends State<RegistrationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Регистрация'),
+        title: const Text('Register'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          children: [
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
             TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Имя пользователя'),
+              controller: usernameController,
+              decoration: const InputDecoration(labelText: 'Username'),
             ),
             TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Пароль'),
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
               obscureText: true,
             ),
             TextField(
-              controller: _confirmPasswordController,
-              decoration: const InputDecoration(labelText: 'Подтвердите пароль'),
+              controller: confirmPasswordController,
+              decoration: const InputDecoration(labelText: 'Confirm Password'),
               obscureText: true,
             ),
             const SizedBox(height: 20),
-            if (!_passwordsMatch)
-              const Text(
-                'Пароли не совпадают',
-                style: TextStyle(color: Colors.red),
-              ),
             ElevatedButton(
-              onPressed: _register,
-              child: const Text('Зарегистрироваться'),
+              onPressed: () => _register(context),
+              child: const Text('Register'),
             ),
           ],
         ),

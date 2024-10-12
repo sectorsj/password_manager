@@ -9,13 +9,43 @@ final dotenv = DotEnv();
 
 void main() async {
 
-  dotenv.load(['D:/filesEvgeniy/projects/mycoding/flutter/password_manager/password_manager_server/.env']);
+  // dotenv.load(['D:/filesEvgeniy/projects/mycoding/flutter/password_manager/password_manager_server/.env']);
+  dotenv.load(['.env']);
 
   // Подключение к базе данных
   final connection = await createConnection();
 
   // Создаем маршруты API
   final router = Router();
+
+  // API для регистрации нового пользователя
+  router.post('/register', (Request request) async {
+    var data = await request.readAsString();
+    var body = Uri.splitQueryString(data);
+
+    // Получаем данные из запроса
+    String username = body['username']!;
+    String email = body['email']!;
+    String password = body['password']!;
+
+    // Вставляем нового пользователя в базу данных
+    try {
+      await connection.query(
+        'INSERT INTO accounts (account_login, email, password_hash, salt) VALUES (@username, @email, @password, @salt)',
+        substitutionValues: {
+          'username': username,
+          'email': email,
+          'password': password,
+          'salt': 'your_salt_value', // Здесь должна быть ваша соль
+        },
+      );
+      return Response.ok('User registered successfully');
+    } catch (e) {
+      print('Error registering user: $e');
+      return Response.internalServerError(body: 'Error registering user');
+    }
+  });
+
 
   // API для получения всех email для аккаунта
   router.get('/emails/<accountId>', (Request request, String accountId) async {
@@ -102,6 +132,35 @@ void main() async {
     return Response.ok('Website added successfully');
   });
 
+
+  // API для входа пользователя
+  router.post('/login', (Request request) async {
+    var data = await request.readAsString();
+    var body = Uri.splitQueryString(data);
+
+    String username = body['username']!;
+    String password = body['password']!;
+
+    try {
+      var result = await connection.query(
+        'SELECT * FROM accounts WHERE account_login = @username AND password_hash = @password',
+        substitutionValues: {
+          'username': username,
+          'password': password,
+        },
+      );
+
+      if (result.isNotEmpty) {
+        return Response.ok('Login successful');
+      } else {
+        return Response.forbidden('Invalid username or password');
+      }
+    } catch (e) {
+      print('Error logging in: $e');
+      return Response.internalServerError(body: 'Error logging in');
+    }
+  });
+
   // Настройка CORS и логирования
   final handler = const Pipeline()
       .addMiddleware(logRequests())  // Логирование запросов
@@ -124,6 +183,6 @@ Future<PostgreSQLConnection> createConnection() async {
   );
 
   await connection.open();
-  print('Connected to the database');
+  print('Подключение к базе данных установлено');
   return connection;
 }

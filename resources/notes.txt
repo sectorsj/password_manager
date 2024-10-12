@@ -1,3 +1,283 @@
+█SectorSj@SectorSj█  password_manager_frontend██ v_0_0_1 ≡  ~1 |  ~6 ?10██100  ﲵ powershell█ █ flutter run
+Connected devices:
+Windows (desktop) • windows • windows-x64    • Microsoft Windows [Version 10.0.19045.5011]
+Chrome (web)      • chrome  • web-javascript • Google Chrome 129.0.6668.90
+Edge (web)        • edge    • web-javascript • Microsoft Edge 129.0.2792.79
+[1]: Windows (windows)
+[2]: Chrome (chrome)
+[3]: Edge (edge)
+Please choose one (or "q" to quit): 2
+Launching lib\main.dart on Chrome in debug mode...
+Waiting for connection from debug service on Chrome...             20,9s
+This app is linked to the debug service: ws://127.0.0.1:59775/V0e8SP86XQ8=/ws
+Debug service listening on ws://127.0.0.1:59775/V0e8SP86XQ8=/ws
+
+  To hot restart changes while running, press "r" or "R".
+For a more detailed help message, press "h". To quit, press "q".
+
+A Dart VM Service on Chrome is available at: http://127.0.0.1:59775/V0e8SP86XQ8=
+The Flutter DevTools debugger and profiler on Chrome is available at: http://127.0.0.1:9101?uri=http://127.0.0.1:59775/V0e8SP86XQ8=
+Login failed. Server response code: 500, message: Ошибка при авторизации вв
+Registering with username: sec, email: sec, password: 100
+Registration failed. Server response code: 500, message: Error registering user
+
+
+create table accounts
+(
+    id            bigint default nextval('accounts_id_seq'::regclass) not null
+        primary key,
+    account_login varchar(255)                                        not null,
+    email         varchar(255)                                        not null,
+    password_hash varchar(255)                                        not null,
+    salt          varchar(255)
+);
+
+alter table accounts
+    owner to sectorsj;
+
+
+38,sectorsj,sectorsj@mail.ru,cI3MJbZTK7mEPKyWiX2ypNYAJAoDe0Z6ZvIqDNkI7VY=,L/GkITmADWLfPVZe/gKADg==
+50,raptor,"raptor@,ail.ru",JVZwz8VqGRSbGInWjlciBvZF3Z0D1MK/UI1YjEDMEa0=,VxupyTffGUU3BfHaGZKevQ==
+
+
+
+
+create table users
+(
+    id               bigserial
+        primary key,
+    phone            varchar(255),
+    user_description varchar(255),
+    username         varchar(255),
+    account_id       bigint not null
+        constraint fkfm8rm8ks0kgj4fhlmmljkj17x
+            references accounts
+);
+
+alter table users
+    owner to sectorsj;
+
+14,55555,опапапапапап,sectorsj,38
+
+
+
+create table emails
+(
+    id                bigserial
+        primary key,
+    email_address     varchar(255) not null
+        constraint uk_4jeq4kcq8fkfq1jhb5qp2mqj1
+            unique,
+    email_description varchar(255),
+    password_hash     varchar(255) not null,
+    salt              varchar(255) not null,
+    account_id        bigint       not null
+        constraint fkcs0wj7aej9q5ibgryd2nbo6v7
+            references accounts,
+    category_id       bigint       not null
+        constraint fkgyyal19v3egcs3doivvcim3gt
+            references categories,
+    user_id           bigint       not null
+        constraint fk41wb6kvdemvj1602iltrfr1uo
+            references users
+);
+
+alter table emails
+    owner to sectorsj;
+
+
+
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+class RegistrationPage extends StatelessWidget {
+  RegistrationPage({Key? key}) : super(key: key);
+
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+
+  Future<void> _register(BuildContext context) async {
+    String username = usernameController.text.trim();
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+    String confirmPassword = confirmPasswordController.text.trim();
+
+    print('Registering with username: $username, email: $email, password: $password');
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Passwords do not match'),
+      ));
+      return;
+    }
+
+    var url = Uri.parse('http://localhost:8080/register');
+    var response = await http.post(url, body: {
+      'username': username,
+      'email': email,
+      'password': password,
+    });
+
+    if (response.statusCode == 200) {
+      print('Registration successful. Server response: ${response.body}');
+      Navigator.pop(context); // Registration successful, navigate back to login screen
+    } else {
+      print('Registration failed. Server response code: ${response.statusCode}, message: ${response.body}');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Registration failed. Username or email already in use.'),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Register'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextField(
+              controller: usernameController,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            TextField(
+              controller: confirmPasswordController,
+              decoration: const InputDecoration(labelText: 'Confirm Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _register(context),
+              child: const Text('Register'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:password_manager_frontend/pages/home_page.dart';
+import 'package:password_manager_frontend/pages/registration_page.dart';
+
+class LoginPage extends StatelessWidget {
+  LoginPage({Key? key}) : super(key: key);
+
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  Future<void> _login(BuildContext context) async {
+    String username = usernameController.text.trim();
+    String password = passwordController.text.trim();
+
+    var url = Uri.parse('http://localhost:8080/login');
+    var response = await http.post(url, body: {
+      'username': username,
+      'password': password,
+    });
+
+    if (response.statusCode == 200) {
+      print('Login successful. Server response: ${response.body}');
+      // Login successful, navigate to home screen or tabs screen
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+    } else {
+      print('Login failed. Server response code: ${response.statusCode}, message: ${response.body}');
+      // Show error message or handle invalid credentials
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Не верное имя пользователя или пароль'),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Login'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextField(
+              controller: usernameController,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _login(context),
+              child: const Text('Login'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationPage()));
+              },
+              child: const Text('Register'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/pages/splash_screen_page.dart';
+import 'pages/registration_page.dart';
+import 'pages/login_page.dart';
+import 'pages/home_page.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Password Manager',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      initialRoute: '/splash',
+      routes: {
+        '/splash': (context) => const SplashScreenPage(),
+        '/login': (context) => LoginPage(),
+        '/register': (context) => RegistrationPage(),
+        '/home': (context) => const HomePage(),
+      },
+    );
+  }
+}
+
+
 import 'package:dotenv/dotenv.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
@@ -9,13 +289,40 @@ final dotenv = DotEnv();
 
 void main() async {
 
-  dotenv.load(['D:/filesEvgeniy/projects/mycoding/flutter/password_manager/password_manager_server/.env']);
+  // dotenv.load(['D:/filesEvgeniy/projects/mycoding/flutter/password_manager/password_manager_server/.env']);
+  dotenv.load(['.env']);
 
   // Подключение к базе данных
   final connection = await createConnection();
 
   // Создаем маршруты API
   final router = Router();
+
+  // API для регистрации нового пользователя
+  router.post('/register', (Request request) async {
+    var data = await request.readAsString();
+    var body = Uri.splitQueryString(data);
+
+    // Получаем данные из запроса
+    String username = body['username']!;
+    String password = body['password']!;
+
+    // Вставляем нового пользователя в базу данных
+    try {
+      await connection.query(
+        'INSERT INTO users (username, password) VALUES (@username, @password)',
+        substitutionValues: {
+          'username': username,
+          'password': password,
+        },
+      );
+      return Response.ok('User registered successfully');
+    } catch (e) {
+      print('Error registering user: $e');
+      return Response.internalServerError(body: 'Error registering user');
+    }
+  });
+
 
   // API для получения всех email для аккаунта
   router.get('/emails/<accountId>', (Request request, String accountId) async {
@@ -102,6 +409,37 @@ void main() async {
     return Response.ok('Website added successfully');
   });
 
+
+  // API для входа пользователя
+  router.post('/login', (Request request) async {
+    var data = await request.readAsString();
+    var body = Uri.splitQueryString(data);
+
+    // Получаем данные из запроса
+    String username = body['username']!;
+    String password = body['password']!;
+
+    // Проверяем данные пользователя в базе данных
+    try {
+      var result = await connection.query(
+        'SELECT * FROM users WHERE username = @username AND password = @password',
+        substitutionValues: {
+          'username': username,
+          'password': password,
+        },
+      );
+
+      if (result.isNotEmpty) {
+        return Response.ok('Авторизация прошла успешно');
+      } else {
+        return Response.forbidden('Неверный логин или пароль');
+      }
+    } catch (e) {
+      print('Ошибка при авторизации в : $e');
+      return Response.internalServerError(body: 'Ошибка при авторизации вв');
+    }
+  });
+
   // Настройка CORS и логирования
   final handler = const Pipeline()
       .addMiddleware(logRequests())  // Логирование запросов
@@ -124,686 +462,6 @@ Future<PostgreSQLConnection> createConnection() async {
   );
 
   await connection.open();
-  print('Connected to the database');
+  print('Подключение к базе данных установлено');
   return connection;
-}
-
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';  // Для копирования пароля
-import 'package:password_manager_frontend/services/api_service.dart';
-
-class EmailsTab extends StatefulWidget {
-  const EmailsTab({Key? key}) : super(key: key);
-
-  @override
-  _EmailsTabState createState() => _EmailsTabState();
-}
-
-class _EmailsTabState extends State<EmailsTab> {
-  final ApiService apiService = ApiService();
-  List<dynamic> emails = [];
-  bool _showPassword = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadEmails();
-  }
-
-  Future<void> _loadEmails() async {
-    List<dynamic> result = await apiService.getEmailsByAccount(1);  // Пример ID аккаунта
-    setState(() {
-      emails = result;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Emails'),
-      ),
-      body: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('№')),
-            DataColumn(label: Text('Email')),
-            DataColumn(label: Text('Пароль')),
-          ],
-          rows: emails.asMap().entries.map((entry) {
-            int index = entry.key + 1;
-            var email = entry.value;
-
-            return DataRow(
-              cells: [
-                DataCell(Text(index.toString())),
-                DataCell(Text(email[1])),  // email_address
-                DataCell(Row(
-                  children: [
-                    Text(_showPassword ? email[2] : '****'), // пароль
-                    IconButton(
-                      icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () {
-                        setState(() {
-                          _showPassword = !_showPassword;
-                        });
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.copy),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: email[2]));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Пароль скопирован')),
-                        );
-                      },
-                    ),
-                  ],
-                )),
-              ],
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-}
-
-
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
-
-  @override
-  _LoginPageState createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _loginFailed = false;
-
-  Future<void> _login() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? storedUsername = prefs.getString('username');
-    String? storedPassword = prefs.getString('password');
-
-    if (_usernameController.text == storedUsername &&
-        _passwordController.text == storedPassword) {
-      Navigator.pushReplacementNamed(context, '/passwords');
-    } else {
-      setState(() {
-        _loginFailed = true;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Вход'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Имя пользователя'),
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Пароль'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            if (_loginFailed)
-              const Text(
-                'Неверное имя пользователя или пароль',
-                style: TextStyle(color: Colors.red),
-              ),
-            ElevatedButton(
-              onPressed: _login,
-              child: const Text('Войти'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/register');
-              },
-              child: const Text('Зарегистрироваться'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';  // Для копирования пароля
-import 'package:password_manager_frontend/services/api_service.dart';
-
-class NetworkConnectionsTab extends StatefulWidget {
-  const NetworkConnectionsTab({Key? key}) : super(key: key);
-
-  @override
-  _NetworkConnectionsTabState createState() => _NetworkConnectionsTabState();
-}
-
-class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
-  final ApiService apiService = ApiService();
-  List<dynamic> connections = [];
-  bool _showPassword = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadNetworkConnections();
-  }
-
-  Future<void> _loadNetworkConnections() async {
-    List<dynamic> result = await apiService.getNetworkConnectionsByAccount(1);  // Пример ID аккаунта
-    setState(() {
-      connections = result;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Network Connections'),
-      ),
-      body: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('№')),
-            DataColumn(label: Text('Название')),
-            DataColumn(label: Text('IPv4')),
-            DataColumn(label: Text('IPv6')),
-            DataColumn(label: Text('Имя пользователя')),
-            DataColumn(label: Text('Пароль')),
-          ],
-          rows: connections.asMap().entries.map((entry) {
-            int index = entry.key + 1;
-            var connection = entry.value;
-
-            return DataRow(
-              cells: [
-                DataCell(Text(index.toString())),
-                DataCell(Text(connection[1])),  // connection_name
-                DataCell(Text(connection[2])),  // ipv4
-                DataCell(Text(connection[3])),  // ipv6
-                DataCell(Text(connection[4])),  // login
-                DataCell(Row(
-                  children: [
-                    Text(_showPassword ? connection[5] : '****'), // пароль
-                    IconButton(
-                      icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () {
-                        setState(() {
-                          _showPassword = !_showPassword;
-                        });
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.copy),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: connection[5]));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Пароль скопирован')),
-                        );
-                      },
-                    ),
-                  ],
-                )),
-              ],
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-}
-
-
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-class PasswordStoragePage extends StatefulWidget {
-  const PasswordStoragePage({Key? key}) : super(key: key);
-
-  @override
-  _PasswordStoragePageState createState() => _PasswordStoragePageState();
-}
-
-class _PasswordStoragePageState extends State<PasswordStoragePage> {
-  final _passwordController = TextEditingController();
-  final List<String> _storedPasswords = [];
-
-  Future<void> _addPassword() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _storedPasswords.add(_passwordController.text);
-      _passwordController.clear();
-    });
-    prefs.setStringList('passwords', _storedPasswords);
-  }
-
-  Future<void> _loadPasswords() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _storedPasswords.addAll(prefs.getStringList('passwords') ?? []);
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPasswords();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Сохраненные пароли'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Добавить новый пароль'),
-              obscureText: true,
-            ),
-            ElevatedButton(
-              onPressed: _addPassword,
-              child: const Text('Добавить'),
-            ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _storedPasswords.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(_storedPasswords[index]),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-class RegistrationPage extends StatefulWidget {
-  const RegistrationPage({Key? key}) : super(key: key);
-
-  @override
-  _RegistrationPageState createState() => _RegistrationPageState();
-}
-
-class _RegistrationPageState extends State<RegistrationPage> {
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
-  bool _passwordsMatch = true;
-
-  Future<void> _register() async {
-    if (_passwordController.text == _confirmPasswordController.text) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('username', _usernameController.text);
-      await prefs.setString('password', _passwordController.text);
-
-      Navigator.pop(context);  // Возвращаемся на страницу логина
-    } else {
-      setState(() {
-        _passwordsMatch = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Регистрация'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _usernameController,
-              decoration: const InputDecoration(labelText: 'Имя пользователя'),
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Пароль'),
-              obscureText: true,
-            ),
-            TextField(
-              controller: _confirmPasswordController,
-              decoration: const InputDecoration(labelText: 'Подтвердите пароль'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            if (!_passwordsMatch)
-              const Text(
-                'Пароли не совпадают',
-                style: TextStyle(color: Colors.red),
-              ),
-            ElevatedButton(
-              onPressed: _register,
-              child: const Text('Зарегистрироваться'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-import 'package:flutter/material.dart';
-import 'dart:async';
-
-class SplashScreenPage extends StatefulWidget {
-  const SplashScreenPage({Key? key}) : super(key: key);
-
-  @override
-  _SplashScreenPageState createState() => _SplashScreenPageState();
-}
-
-class _SplashScreenPageState extends State<SplashScreenPage> {
-  @override
-  void initState() {
-    super.initState();
-    Timer(const Duration(seconds: 3), (){
-      Navigator.pushReplacementNamed(context,'/login');
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.blue,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.security,
-              size: 100.0,
-              color: Colors.white,
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Password Manager',
-              style: TextStyle(
-                fontSize: 24.0,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 10),
-            CircularProgressIndicator(
-              color: Colors.white,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';  // Для копирования пароля
-import 'package:password_manager_frontend/services/api_service.dart';
-
-class WebsitesTab extends StatefulWidget {
-  const WebsitesTab({Key? key}) : super(key: key);
-
-  @override
-  _WebsitesTabState createState() => _WebsitesTabState();
-}
-
-class _WebsitesTabState extends State<WebsitesTab> {
-  final ApiService apiService = ApiService();
-  List<dynamic> websites = [];
-  bool _showPassword = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadWebsites();
-  }
-
-  Future<void> _loadWebsites() async {
-    List<dynamic> result = await apiService.getWebsitesByAccount(
-        1); // Пример ID аккаунта
-    setState(() {
-      websites = result;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Websites'),
-      ),
-      body: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columns: const [
-            DataColumn(label: Text('№')),
-            DataColumn(label: Text('Название сайта')),
-            DataColumn(label: Text('URL')),
-            DataColumn(label: Text('Имя пользователя')),
-            DataColumn(label: Text('Email')),
-            DataColumn(label: Text('Пароль')),
-          ],
-          rows: websites
-              .asMap()
-              .entries
-              .map((entry) {
-            int index = entry.key + 1;
-            var website = entry.value;
-
-            return DataRow(
-              cells: [
-                DataCell(Text(index.toString())),
-                DataCell(Text(website[1])), // website_name
-                DataCell(Text(website[2])), // url
-                DataCell(Text(website[3])), // login
-                DataCell(Text(website[4])), // email
-                DataCell(Row(
-                  children: [
-                    Text(_showPassword ? website[5] : '****'), // пароль
-                    IconButton(
-                      icon: Icon(_showPassword ? Icons.visibility_off : Icons
-                          .visibility),
-                      onPressed: () {
-                        setState(() {
-                          _showPassword = !_showPassword;
-                        });
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.copy),
-                      onPressed: () {
-                        Clipboard.setData(ClipboardData(text: website[5]));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Пароль скопирован')),
-                        );
-                      },
-                    ),
-                  ],
-                )),
-              ],
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-}
-
-
-
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-
-class ApiService {
-  final String baseUrl = 'http://localhost:8080';
-
-  // Получить все Email для аккаунта
-  Future<List<dynamic>> getEmailsByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$baseUrl/emails/$accountId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load emails');
-    }
-  }
-
-  // Добавить Email
-  Future<String> addEmail(String email, String password, String salt, String description, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/emails/add'),
-      body: {
-        'email_address': email,
-        'password_hash': password,
-        'salt': salt,
-        'email_description': description,
-        'account_id': accountId.toString(),
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return 'Email added successfully';
-    } else {
-      return 'Failed to add email';
-    }
-  }
-
-  // Получить все Network Connections для аккаунта
-  Future<List<dynamic>> getNetworkConnectionsByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$baseUrl/network-connections/$accountId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load network connections');
-    }
-  }
-
-  // Добавить сетевое подключение
-  Future<String> addNetworkConnection(String name, String ipv4, String ipv6, String login, String password, String salt, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/network-connections/add'),
-      body: {
-        'connection_name': name,
-        'ipv4': ipv4,
-        'ipv6': ipv6,
-        'network_login': login,
-        'password_hash': password,
-        'salt': salt,
-        'account_id': accountId.toString(),
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return 'Network connection added successfully';
-    } else {
-      return 'Failed to add network connection';
-    }
-  }
-
-  // Получить все Websites для аккаунта
-  Future<List<dynamic>> getWebsitesByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$baseUrl/websites/$accountId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load websites');
-    }
-  }
-
-  // Добавить Website
-  Future<String> addWebsite(String name, String url, String login, String password, String salt, String description, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/websites/add'),
-      body: {
-        'website_name': name,
-        'url': url,
-        'website_login': login,
-        'password_hash': password,
-        'salt': salt,
-        'website_description': description,
-        'account_id': accountId.toString(),
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return 'Website added successfully';
-    } else {
-      return 'Failed to add website';
-    }
-  }
-}
-
-
-
-
-import 'package:flutter/material.dart';
-import 'package:password_manager_frontend/pages/emails_tab.dart';
-import 'package:password_manager_frontend/pages/network_connections_tab.dart';
-import 'package:password_manager_frontend/pages/splash_screen_page.dart';
-import 'package:password_manager_frontend/pages/websites_tab.dart';
-import 'pages/registration_page.dart';
-import 'pages/login_page.dart';
-import 'pages/password_storage_page.dart';
-
-void main() {
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Password Manager',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      initialRoute: '/splash',
-      routes: {
-        '/splash': (context) => const SplashScreenPage(),
-        '/login': (context) => const LoginPage(),
-        '/register': (context) => const RegistrationPage(),
-        '/passwords': (context) => const PasswordStoragePage(),
-        '/emails': (context) => const EmailsTab(),
-        '/network-connections': (context) => const NetworkConnectionsTab(),
-        '/websites': (context) => const WebsitesTab(),
-      },
-    );
-  }
 }

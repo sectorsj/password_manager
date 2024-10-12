@@ -3,8 +3,8 @@ import 'emails_tab.dart';
 import 'network_connections_tab.dart';
 import 'websites_tab.dart';
 
-class HomeTabs extends StatelessWidget {
-  const HomeTabs({Key? key}) : super(key: key);
+class HomePage extends StatelessWidget {
+  const HomePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
