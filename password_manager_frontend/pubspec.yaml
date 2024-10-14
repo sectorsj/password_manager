@@ -31,13 +31,10 @@ dependencies:
   flutter:
     sdk: flutter
   shared_preferences: ^2.0.15
-  encrypt: ^5.0.1
-  http: ^0.13.3  # Для отправки HTTP запросов к серверу
-
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  http: ^1.2.2
   cupertino_icons: ^1.0.8
+  hashing_utility_package:
+    path: ../common/utility
 
 dev_dependencies:
   flutter_test:

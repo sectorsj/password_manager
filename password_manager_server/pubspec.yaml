@@ -2,11 +2,15 @@ name: password_manager_server
 description: A Dart server for managing passwords API requests.
 
 environment:
-  sdk: '>=2.16.0 <3.0.0'
+  sdk: ^3.5.3
 
 dependencies:
+  flutter:
+    sdk: flutter
   shelf: ^1.3.0
   shelf_router: ^1.0.0
   shelf_cors_headers: ^0.1.5
   postgres: ^2.5.4
   dotenv: ^4.2.0  # Для загрузки переменных окружения
+  hashing_utility_package:
+    path: ../common/utility

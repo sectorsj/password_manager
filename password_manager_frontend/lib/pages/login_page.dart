@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/pages/registration_page.dart';
 
@@ -13,23 +14,31 @@ class LoginPage extends StatelessWidget {
     String username = usernameController.text.trim();
     String password = passwordController.text.trim();
 
-    var url = Uri.parse('http://localhost:8080/login');
-    var response = await http.post(url, body: {
-      'username': username,
-      'password': password,
-    });
+    if (username.isEmpty || password.isEmpty) {
+      _showError(context, 'Имя пользователя и пароль не могут быть пустыми');
+      return;
+    }
+
+    var url = Uri.parse('http://localhost:8080/login');  // Замените на IP-адрес при необходимости
+
+    // Отправка имени пользователя и пароля на сервер
+    var response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'username': username, 'password': password}),
+    );
 
     if (response.statusCode == 200) {
-      print('Login successful. Server response: ${response.body}');
-      // Login successful, navigate to home screen or tabs screen
+      // Успешный вход
+      print('Вход выполнен успешно. Переход на главную страницу...');
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
     } else {
-      print('Login failed. Server response code: ${response.statusCode}, message: ${response.body}');
-      // Show error message or handle invalid credentials
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Не верное имя пользователя или пароль'),
-      ));
+      _showError(context, 'Ошибка входа. Ошибка сервера: ${response.body}');
     }
+  }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

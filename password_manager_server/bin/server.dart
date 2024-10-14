@@ -1,15 +1,17 @@
+import 'dart:convert';
+
 import 'package:dotenv/dotenv.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_cors_headers/shelf_cors_headers.dart';
+import 'package:hashing_utility_package/hashing_utility.dart'; // Подключение вашего класса HashingUtility
 
 final dotenv = DotEnv();
 
 void main() async {
 
-  // dotenv.load(['D:/filesEvgeniy/projects/mycoding/flutter/password_manager/password_manager_server/.env']);
   dotenv.load(['.env']);
 
   // Подключение к базе данных
@@ -18,15 +20,16 @@ void main() async {
   // Создаем маршруты API
   final router = Router();
 
-  // API для регистрации нового пользователя
+  // API для регистрации нового пользователя (с JSON-обработкой)
   router.post('/register', (Request request) async {
     var data = await request.readAsString();
-    var body = Uri.splitQueryString(data);
+    var body = jsonDecode(data);  // Используем jsonDecode для работы с JSON
 
     // Получаем данные из запроса
     String username = body['username']!;
     String email = body['email']!;
-    String password = body['password']!;
+    String passwordHash = body['password']!;
+    String salt = body['salt']!;
 
     // Вставляем нового пользователя в базу данных
     try {
@@ -35,14 +38,48 @@ void main() async {
         substitutionValues: {
           'username': username,
           'email': email,
-          'password': password,
-          'salt': 'your_salt_value', // Здесь должна быть ваша соль
+          'password': passwordHash,
+          'salt': salt,
         },
       );
-      return Response.ok('User registered successfully');
+      print('Пользователь зарегистрирован: $username');
+      return Response.ok('Пользователь зарегистрирован успешно');
     } catch (e) {
-      print('Error registering user: $e');
-      return Response.internalServerError(body: 'Error registering user');
+      print('Ошибка при регистрации пользователя: $e');
+      return Response.internalServerError(body: 'Ошибка при регистрации пользователя');
+    }
+  });
+
+  // API для входа пользователя (с JSON-обработкой)
+  router.post('/login', (Request request) async {
+    var data = await request.readAsString();
+    var body = jsonDecode(data);
+
+    String username = body['username']!;
+    String password = body['password']!;
+
+    try {
+      var result = await connection.query(
+        'SELECT password_hash, salt FROM accounts WHERE account_login = @username',
+        substitutionValues: {'username': username},
+      );
+
+      if (result.isNotEmpty) {
+        String storedHash = result.first.toColumnMap()['password_hash'];
+        String storedSalt = result.first.toColumnMap()['salt'];
+
+        bool passwordMatch = await HashingUtility.verifyPassword(password, storedSalt, storedHash);
+
+        if (passwordMatch) {
+          return Response.ok(jsonEncode({'message': 'Авторизация прошла успешно'}), headers: {'Content-Type': 'application/json'});
+        } else {
+          return Response.forbidden(jsonEncode({'ошибка!': 'Неверное имя пользователя или пароль'}), headers: {'Content-Type': 'application/json'});
+        }
+      } else {
+        return Response.forbidden(jsonEncode({'ошибка!': 'Неверное имя пользователя или пароль'}), headers: {'Content-Type': 'application/json'});
+      }
+    } catch (e) {
+      return Response.internalServerError(body: 'Error logging in');
     }
   });
 
@@ -132,45 +169,23 @@ void main() async {
     return Response.ok('Website added successfully');
   });
 
-
-  // API для входа пользователя
-  router.post('/login', (Request request) async {
-    var data = await request.readAsString();
-    var body = Uri.splitQueryString(data);
-
-    String username = body['username']!;
-    String password = body['password']!;
-
-    try {
-      var result = await connection.query(
-        'SELECT * FROM accounts WHERE account_login = @username AND password_hash = @password',
-        substitutionValues: {
-          'username': username,
-          'password': password,
-        },
-      );
-
-      if (result.isNotEmpty) {
-        return Response.ok('Login successful');
-      } else {
-        return Response.forbidden('Invalid username or password');
-      }
-    } catch (e) {
-      print('Error logging in: $e');
-      return Response.internalServerError(body: 'Error logging in');
-    }
-  });
-
   // Настройка CORS и логирования
   final handler = const Pipeline()
       .addMiddleware(logRequests())  // Логирование запросов
-      .addMiddleware(corsHeaders())
+      .addMiddleware(corsHeaders(
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+  ))
       .addHandler(router);
 
   // Запуск сервера
   final server = await shelf_io.serve(handler, 'localhost', 8080);
-  print('Server running at http://${server.address.host}:${server.port}');
+  print('Сервер запушен по адресу: http://${server.address.host}:${server.port}');
 }
+
 
 // Настройка подключения к базе данных Postgres
 Future<PostgreSQLConnection> createConnection() async {
