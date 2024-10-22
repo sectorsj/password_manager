@@ -12,7 +12,7 @@ class EmailsTab extends StatefulWidget {
 class _EmailsTabState extends State<EmailsTab> {
   final ApiService apiService = ApiService();
   List<dynamic> emails = [];
-  bool _showPassword = false;
+  Map<int, bool> _showPasswordMap = {};  // Отображение пароля для каждого элемента
 
   @override
   void initState() {
@@ -21,7 +21,8 @@ class _EmailsTabState extends State<EmailsTab> {
   }
 
   Future<void> _loadEmails() async {
-    List<dynamic> result = await apiService.getEmailsByAccount(1);  // Пример ID аккаунта
+    // Предполагаем, что ID аккаунта 1 — временное решение
+    List<dynamic> result = await apiService.getEmailsByAccount(1);
     setState(() {
       emails = result;
     });
@@ -40,30 +41,35 @@ class _EmailsTabState extends State<EmailsTab> {
             DataColumn(label: Text('№')),
             DataColumn(label: Text('Email')),
             DataColumn(label: Text('Пароль')),
+            DataColumn(label: Text('Описание')),
           ],
           rows: emails.asMap().entries.map((entry) {
             int index = entry.key + 1;
             var email = entry.value;
 
+            // Получаем текущее состояние отображения пароля
+            bool _showPassword = _showPasswordMap[index] ?? false;
+
             return DataRow(
               cells: [
                 DataCell(Text(index.toString())),
-                DataCell(Text(email[1])),  // email_address
+                DataCell(Text(email['email_address'])),  // email_address
                 DataCell(Row(
                   children: [
-                    Text(_showPassword ? email[2] : '****'), // пароль
+                    // Отображаем пароль или скрываем его
+                    Text(_showPassword ? email['password_hash'] : '****'),
                     IconButton(
                       icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
                       onPressed: () {
                         setState(() {
-                          _showPassword = !_showPassword;
+                          _showPasswordMap[index] = !_showPassword;
                         });
                       },
                     ),
                     IconButton(
                       icon: const Icon(Icons.copy),
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: email[2]));
+                        Clipboard.setData(ClipboardData(text: email['password_hash']));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Пароль скопирован')),
                         );
@@ -71,6 +77,7 @@ class _EmailsTabState extends State<EmailsTab> {
                     ),
                   ],
                 )),
+                DataCell(Text(email['email_description'] ?? '')),  // email_description
               ],
             );
           }).toList(),

@@ -25,13 +25,13 @@ void main() async {
     var data = await request.readAsString();
     var body = jsonDecode(data);  // Используем jsonDecode для работы с JSON
 
-    // Получаем данные из запроса
+    // API для получения данных из запроса
     String username = body['username']!;
     String email = body['email']!;
     String passwordHash = body['password']!;
     String salt = body['salt']!;
 
-    // Вставляем нового пользователя в базу данных
+    //  API для добавления нового аккаунта в базу данных
     try {
       await connection.query(
         'INSERT INTO accounts (account_login, email, password_hash, salt) VALUES (@username, @email, @password, @salt)',
@@ -71,12 +71,15 @@ void main() async {
         bool passwordMatch = await HashingUtility.verifyPassword(password, storedSalt, storedHash);
 
         if (passwordMatch) {
-          return Response.ok(jsonEncode({'message': 'Авторизация прошла успешно'}), headers: {'Content-Type': 'application/json'});
+          return Response.ok(jsonEncode({'message': 'Авторизация прошла успешно'}),
+              headers: {'Content-Type': 'application/json'});
         } else {
-          return Response.forbidden(jsonEncode({'ошибка!': 'Неверное имя пользователя или пароль'}), headers: {'Content-Type': 'application/json'});
+          return Response.forbidden(jsonEncode({'ошибка!': 'Неверное имя пользователя или пароль'}),
+              headers: {'Content-Type': 'application/json'});
         }
       } else {
-        return Response.forbidden(jsonEncode({'ошибка!': 'Неверное имя пользователя или пароль'}), headers: {'Content-Type': 'application/json'});
+        return Response.forbidden(jsonEncode({'ошибка!': 'Неверное имя пользователя или пароль'}),
+            headers: {'Content-Type': 'application/json'});
       }
     } catch (e) {
       return Response.internalServerError(body: 'Error logging in');
