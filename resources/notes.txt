@@ -1,3 +1,428 @@
+EmailsPage (почты) таблица с 4-я колонками:
+1. порядковый номер записи таблицы
+2. адрес электронной почты
+3. пароль (отображается в виде 4х звездочек)
+   в этой же колонке должно быть две иконки:
+	1. Глаз - чтобы отобразить пароль
+	2. Два Квадратика - обозначающие возможно скопировать пароль
+4. описание почты
+5. соль пароля (не отображается в таблице)
+6. категория пользователя (не отображается в таблице)
+Процедура создания новой почты:
+1. После успешной авторизации:
+   1. Открывается диалоговое окно, с вопросом:
+      1. Текст: "Установить указанную почту для работы по умолчанию?"
+      2. Поле выбора "Почты" (где указана ранее созданная при регистрации почта)
+         1. Идет запрос в бд на поиск записи о почте в созданном аккаунте
+            1. Если:
+               1. Запись найдена:
+                  1. Отобразить в поле выбора данные о почте
+               2. Запись не найдена:
+                  1. ничего не отображать
+      3. Кнопка "Да, использовать почту по умолчанию"
+         1. Запуск процедуры "добавленияРанееСозданнойПочты"
+            1. Открывается "формаСозданияИРедактированияПочты" с полями:
+               1. Поле АдресПочты (Заполнено записью из accounts.email)
+               2. Поле Пароль (Пустое)
+               3. Поле Подтвердить пароль (Пустое)
+               4. Поле ОписаниеПочты (Пустое)
+               5. Поле Пользователь (User_id) (Заполнено)
+                  1. Кнопка "Тест" (отвечает за проверку, существует ли такой пользователь в бд)
+               6. Поле Аккаунт (Account_id) (Заполнено)
+                  1. Кнопка "Тест" (отвечает за проверку, существует ли такой аккаунт в бд)
+               7. Кнопка "Подтвердить"
+            2. Закрывается "формаСозданияИРедактированияПочты"
+            3. Выполняется запись в бд измененной информации о почте
+         2. Завершение процедуры "добавленияРанееСозданнойПочты"
+      4. Кнопка "Нет, создать новую почту"
+         1. Запуск процедуры "созданиеНовойПочты"
+            1. Открывается "формаСозданияИРедактированияПочты" с полями:
+               1. Поле АдресПочты (Пустое)
+               2. Поле Пароль (Пустое)
+               3. Поле Подтвердить пароль (Пустое)
+               4. Поле ОписаниеПочты (Пустое)
+               5. Поле Пользователь (User_id) (пустое)
+                  1. Кнопка "Тест" (отвечает за проверку, существует ли такой пользователь в бд)
+               6. Поле Аккаунт (Account_id) (пустое)
+                  1. Кнопка "Тест" (отвечает за проверку, существует ли такой аккаунт в бд)
+               7. Кнопка "Подтвердить"
+            2. Закрывается "формаСозданияИРедактированияПочты"
+            3. Выполняется запись в бд измененной информации о почте
+         2. Завершение процедуры "добавленияРанееСозданнойПочты"
+
+
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';  // Для копирования пароля
+import 'package:password_manager_frontend/services/api_service.dart';
+
+class WebsitesTab extends StatefulWidget {
+  const WebsitesTab({Key? key}) : super(key: key);
+
+  @override
+  _WebsitesTabState createState() => _WebsitesTabState();
+}
+
+class _WebsitesTabState extends State<WebsitesTab> {
+  final ApiService apiService = ApiService();
+  List<dynamic> websites = [];
+  bool _showPassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWebsites();
+  }
+
+  Future<void> _loadWebsites() async {
+    List<dynamic> result = await apiService.getWebsitesByAccount(
+        1); // Пример ID аккаунта
+    setState(() {
+      websites = result;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Websites'),
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text('№')),
+            DataColumn(label: Text('Название сайта')),
+            DataColumn(label: Text('URL')),
+            DataColumn(label: Text('Имя пользователя')),
+            DataColumn(label: Text('Email')),
+            DataColumn(label: Text('Пароль')),
+          ],
+          rows: websites
+              .asMap()
+              .entries
+              .map((entry) {
+            int index = entry.key + 1;
+            var website = entry.value;
+
+            return DataRow(
+              cells: [
+                DataCell(Text(index.toString())),
+                DataCell(Text(website[1])), // website_name
+                DataCell(Text(website[2])), // url
+                DataCell(Text(website[3])), // login
+                DataCell(Text(website[4])), // email
+                DataCell(Row(
+                  children: [
+                    Text(_showPassword ? website[5] : '****'), // пароль
+                    IconButton(
+                      icon: Icon(_showPassword ? Icons.visibility_off : Icons
+                          .visibility),
+                      onPressed: () {
+                        setState(() {
+                          _showPassword = !_showPassword;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: website[5]));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Пароль скопирован')),
+                        );
+                      },
+                    ),
+                  ],
+                )),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+import 'package:flutter/material.dart';
+import 'emails_tab.dart';
+import 'network_connections_tab.dart';
+import 'websites_tab.dart';
+
+class HomePage extends StatelessWidget {
+  const HomePage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Password Manager'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Emails'),
+              Tab(text: 'Network Connections'),
+              Tab(text: 'Websites'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            EmailsTab(),
+            NetworkConnectionsTab(),
+            WebsitesTab(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:password_manager_frontend/pages/home_page.dart';
+import 'package:password_manager_frontend/pages/registration_page.dart';
+
+class LoginPage extends StatelessWidget {
+  LoginPage({Key? key}) : super(key: key);
+
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  Future<void> _login(BuildContext context) async {
+    String username = usernameController.text.trim();
+    String password = passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      _showError(context, 'Имя пользователя и пароль не могут быть пустыми');
+      return;
+    }
+
+    var url = Uri.parse('http://localhost:8080/login');  // Замените на IP-адрес при необходимости
+
+    // Отправка имени пользователя и пароля на сервер
+    var response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'username': username, 'password': password}),
+    );
+
+    if (response.statusCode == 200) {
+      // Успешный вход
+      print('Вход выполнен успешно. Переход на главную страницу...');
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+    } else {
+      _showError(context, 'Ошибка входа. Ошибка сервера: ${response.body}');
+    }
+  }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Login'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextField(
+              controller: usernameController,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _login(context),
+              child: const Text('Login'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationPage()));
+              },
+              child: const Text('Register'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:hashing_utility_package/hashing_utility.dart'; // Подключение вашего класса HashingUtility
+import 'dart:convert';
+import '';
+
+class RegistrationPage extends StatelessWidget {
+  RegistrationPage({Key? key}) : super(key: key);
+
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+
+  Future<void> _register(BuildContext context) async {
+    String username = usernameController.text.trim();
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+    String confirmPassword = confirmPasswordController.text.trim();
+
+    print('Registering with username: $username, email: $email, password: $password');
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Пароли не совпадают'),
+      ));
+      return;
+    }
+
+    // Генерация соли и хэша пароля
+    Map<String, String> hashedData = await HashingUtility.hashPassword(password);
+
+    var url = Uri.parse('http://localhost:8080/register');
+    var response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},  // Отправка данных в формате JSON
+        body: jsonEncode({
+        'username': username,
+        'email': email,
+        'password': hashedData['hash'],  // Хэшированный пароль
+        'salt': hashedData['salt'],      // Соль
+        }),   // Отправляем соль
+    );
+
+    if (response.statusCode == 200) {
+      print('Регистрация прошла успешно. Server response: ${response.body}');
+      Navigator.pop(context); // Registration successful, navigate back to login screen
+    } else {
+      print('Регистрация прошла неудачно. Server response code: ${response.statusCode}, message: ${response.body}');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Регистрация прошла неудачно. Имя пользователя или почта уже используются'),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Register'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextField(
+              controller: usernameController,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            TextField(
+              controller: confirmPasswordController,
+              decoration: const InputDecoration(labelText: 'Confirm Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _register(context),
+              child: const Text('Register'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+
+import 'package:flutter/material.dart';
+import 'dart:async';
+
+class SplashScreenPage extends StatefulWidget {
+  const SplashScreenPage({Key? key}) : super(key: key);
+
+  @override
+  _SplashScreenPageState createState() => _SplashScreenPageState();
+}
+
+class _SplashScreenPageState extends State<SplashScreenPage> {
+  @override
+  void initState() {
+    super.initState();
+    Timer(const Duration(seconds: 3), (){
+      Navigator.pushReplacementNamed(context,'/login');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colors.blue,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.security,
+              size: 100.0,
+              color: Colors.white,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Password Manager',
+              style: TextStyle(
+                fontSize: 24.0,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 10),
+            CircularProgressIndicator(
+              color: Colors.white,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+import 'dart:convert';
+
 import 'package:dotenv/dotenv.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
@@ -10,7 +435,6 @@ final dotenv = DotEnv();
 
 void main() async {
 
-  // dotenv.load(['D:/filesEvgeniy/projects/mycoding/flutter/password_manager/password_manager_server/.env']);
   dotenv.load(['.env']);
 
   // Подключение к базе данных
@@ -19,22 +443,18 @@ void main() async {
   // Создаем маршруты API
   final router = Router();
 
-  // API для регистрации нового пользователя
+  // API для регистрации нового пользователя (с JSON-обработкой)
   router.post('/register', (Request request) async {
     var data = await request.readAsString();
-    var body = Uri.splitQueryString(data);
+    var body = jsonDecode(data);  // Используем jsonDecode для работы с JSON
 
-    // Получаем данные из запроса
+    // API для получения данных из запроса
     String username = body['username']!;
     String email = body['email']!;
-    String password = body['password']!;
+    String passwordHash = body['password']!;
+    String salt = body['salt']!;
 
-    // Генерация соли и хэша для пароля
-    var hashedData = await HashingUtility.hashPassword(password);
-    String passwordHash = hashedData['hash']!;
-    String salt = hashedData['salt']!;
-
-    // Вставляем нового пользователя в базу данных
+    //  API для добавления нового аккаунта в базу данных
     try {
       await connection.query(
         'INSERT INTO accounts (account_login, email, password_hash, salt) VALUES (@username, @email, @password, @salt)',
@@ -45,10 +465,47 @@ void main() async {
           'salt': salt,
         },
       );
-      return Response.ok('User registered successfully');
+      print('Пользователь зарегистрирован: $username');
+      return Response.ok('Пользователь зарегистрирован успешно');
     } catch (e) {
-      print('Error registering user: $e');
-      return Response.internalServerError(body: 'Error registering user');
+      print('Ошибка при регистрации пользователя: $e');
+      return Response.internalServerError(body: 'Ошибка при регистрации пользователя');
+    }
+  });
+
+  // API для входа пользователя (с JSON-обработкой)
+  router.post('/login', (Request request) async {
+    var data = await request.readAsString();
+    var body = jsonDecode(data);
+
+    String username = body['username']!;
+    String password = body['password']!;
+
+    try {
+      var result = await connection.query(
+        'SELECT password_hash, salt FROM accounts WHERE account_login = @username',
+        substitutionValues: {'username': username},
+      );
+
+      if (result.isNotEmpty) {
+        String storedHash = result.first.toColumnMap()['password_hash'];
+        String storedSalt = result.first.toColumnMap()['salt'];
+
+        bool passwordMatch = await HashingUtility.verifyPassword(password, storedSalt, storedHash);
+
+        if (passwordMatch) {
+          return Response.ok(jsonEncode({'message': 'Авторизация прошла успешно'}),
+              headers: {'Content-Type': 'application/json'});
+        } else {
+          return Response.forbidden(jsonEncode({'ошибка!': 'Неверное имя пользователя или пароль'}),
+              headers: {'Content-Type': 'application/json'});
+        }
+      } else {
+        return Response.forbidden(jsonEncode({'ошибка!': 'Неверное имя пользователя или пароль'}),
+            headers: {'Content-Type': 'application/json'});
+      }
+    } catch (e) {
+      return Response.internalServerError(body: 'Error logging in');
     }
   });
 
@@ -138,50 +595,23 @@ void main() async {
     return Response.ok('Website added successfully');
   });
 
-  // API для входа пользователя
-  router.post('/login', (Request request) async {
-    var data = await request.readAsString();
-    var body = Uri.splitQueryString(data);
-
-    String username = body['username']!;
-    String password = body['password']!;
-
-    try {
-      var result = await connection.query(
-        'SELECT password_hash, salt FROM accounts WHERE account_login = @username',
-        substitutionValues: { 'username': username},
-      );
-
-      if (result.isNotEmpty) {
-        String storedHash = result.first.toColumnMap()['password_hash'];
-        String storedSalt = result.first.toColumnMap()['salt'];
-
-        bool passwordMatch = await HashingUtility.verifyPassword(password, storedSalt, storedHash);
-
-        if (passwordMatch) {
-          return Response.ok('Login successful');
-        } else {
-          return Response.forbidden('Invalid username or password');
-        }
-      } else {
-        return Response.forbidden('Invalid username or password');
-      }
-    } catch (e) {
-      print('Error logging in: $e');
-      return Response.internalServerError(body: 'Error logging in');
-    }
-  });
-
   // Настройка CORS и логирования
   final handler = const Pipeline()
       .addMiddleware(logRequests())  // Логирование запросов
-      .addMiddleware(corsHeaders())
+      .addMiddleware(corsHeaders(
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+  ))
       .addHandler(router);
 
   // Запуск сервера
   final server = await shelf_io.serve(handler, 'localhost', 8080);
   print('Сервер запушен по адресу: http://${server.address.host}:${server.port}');
 }
+
 
 // Настройка подключения к базе данных Postgres
 Future<PostgreSQLConnection> createConnection() async {
@@ -197,6 +627,8 @@ Future<PostgreSQLConnection> createConnection() async {
   print('Подключение к базе данных установлено');
   return connection;
 }
+
+
 
 
 import 'dart:convert';
@@ -251,414 +683,533 @@ class HashingUtility {
     final generatedHash = await generatePBKDF2Hash(password, salt);
     return hash == generatedHash;
   }
+
 }
 
 
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:password_manager_frontend/pages/home_page.dart';
-import 'package:password_manager_frontend/pages/registration_page.dart';
-import 'package:hashing_utility_package/hashing_utility.dart';
-
-class LoginPage extends StatelessWidget {
-  LoginPage({Key? key}) : super(key: key);
-
-  final TextEditingController usernameController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-
-  Future<void> _login(BuildContext context) async {
-    String username = usernameController.text.trim();
-    String password = passwordController.text.trim();
-
-    if (username.isEmpty || password.isEmpty) {
-      _showError(context, 'Имя пользователя и пароль не могут быть пустыми');
-      return;
-    }
-
-    var url = Uri.parse('http://localhost:8080/login');
-
-    // Send username to server and retrieve stored salt and hash
-    var response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': password}),
-    );
-
-    if (response.statusCode == 200) {
-      // Parse the server's response
-      var responseData = jsonDecode(response.body);
-      String storedSalt = responseData['salt'];
-      String storedHash = responseData['hash'];
-
-      // Verify password locally
-      bool passwordMatch = await HashingUtility.verifyPassword(password, storedSalt, storedHash);
-
-      if (passwordMatch) {
-        print('Вход выполнен успешно. Переход на главную страницу...');
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
-      } else {
-        _showError(context, 'Неверное имя пользователя или пароль');
-      }
-    } else {
-      _showError(context, 'Ошибка входа. Ошибка сервера: ${response.body}');
-    }
-  }
-
-  void _showError(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
-            ),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => _login(context),
-              child: const Text('Login'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationPage()));
-              },
-              child: const Text('Register'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:hashing_utility_package/hashing_utility.dart'; // Подключение вашего класса HashingUtility
-
-class RegistrationPage extends StatelessWidget {
-  RegistrationPage({Key? key}) : super(key: key);
-
-  final TextEditingController usernameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
-
-  Future<void> _register(BuildContext context) async {
-    String username = usernameController.text.trim();
-    String email = emailController.text.trim();
-    String password = passwordController.text.trim();
-    String confirmPassword = confirmPasswordController.text.trim();
-
-    print('Registering with username: $username, email: $email, password: $password');
-
-    if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Пароли не совпадают'),
-      ));
-      return;
-    }
-
-    // Генерация соли и хэша пароля
-    Map<String, String> hashedData = await HashingUtility.hashPassword(password);
-
-    var url = Uri.parse('http://localhost:8080/register');
-    var response = await http.post(url, body: {
-      'username': username,
-      'email': email,
-      'password': hashedData['hash'], // Отправляем хэшированный пароль
-      'salt': hashedData['salt'],     // Отправляем соль
-    });
-
-    if (response.statusCode == 200) {
-      print('Регистрация прошла успешно. Server response: ${response.body}');
-      Navigator.pop(context); // Registration successful, navigate back to login screen
-    } else {
-      print('Регистрация прошла неудачно. Server response code: ${response.statusCode}, message: ${response.body}');
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Регистрация прошла неудачно. Имя пользователя или почта уже используются'),
-      ));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Register'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(labelText: 'Username'),
-            ),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            TextField(
-              controller: passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            TextField(
-              controller: confirmPasswordController,
-              decoration: const InputDecoration(labelText: 'Confirm Password'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => _register(context),
-              child: const Text('Register'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 
-import 'package:flutter/material.dart';
-import 'emails_tab.dart';
-import 'network_connections_tab.dart';
-import 'websites_tab.dart';
-
-class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Password Manager'),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Emails'),
-              Tab(text: 'Network Connections'),
-              Tab(text: 'Websites'),
-            ],
-          ),
-        ),
-        body: const TabBarView(
-          children: [
-            EmailsTab(),
-            NetworkConnectionsTab(),
-            WebsitesTab(),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 
-import 'package:flutter/material.dart';
-import 'dart:async';
 
-class SplashScreenPage extends StatefulWidget {
-  const SplashScreenPage({Key? key}) : super(key: key);
-
-  @override
-  _SplashScreenPageState createState() => _SplashScreenPageState();
-}
-
-class _SplashScreenPageState extends State<SplashScreenPage> {
-  @override
-  void initState() {
-    super.initState();
-    Timer(const Duration(seconds: 3), (){
-      Navigator.pushReplacementNamed(context,'/login');
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.blue,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.security,
-              size: 100.0,
-              color: Colors.white,
-            ),
-            SizedBox(height: 20),
-            Text(
-              'Password Manager',
-              style: TextStyle(
-                fontSize: 24.0,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 10),
-            CircularProgressIndicator(
-              color: Colors.white,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+CREATE TABLE public.accounts (
+    id bigint NOT NULL,
+    account_login character varying(255) NOT NULL,
+    email character varying(255) NOT NULL,
+    password_hash character varying(255) NOT NULL,
+    salt character varying(255)
+);
 
 
-import 'package:flutter/material.dart';
-import 'package:password_manager_frontend/pages/splash_screen_page.dart';
-import 'pages/registration_page.dart';
-import 'pages/login_page.dart';
-import 'pages/home_page.dart';
+ALTER TABLE public.accounts OWNER TO sectorsj;
 
-void main() {
-  runApp(const MyApp());
-}
+--
+-- TOC entry 200 (class 1259 OID 85389)
+-- Name: accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: sectorsj
+--
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Password Manager',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      initialRoute: '/splash',
-      routes: {
-        '/splash': (context) => const SplashScreenPage(),
-        '/login': (context) => LoginPage(),
-        '/register': (context) => RegistrationPage(),
-        '/home': (context) => const HomePage(),
-      },
-    );
-  }
-}
+CREATE SEQUENCE public.accounts_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+ALTER SEQUENCE public.accounts_id_seq OWNER TO sectorsj;
 
-class ApiService {
-  final String baseUrl = 'http://localhost:8080';
+--
+-- TOC entry 3067 (class 0 OID 0)
+-- Dependencies: 200
+-- Name: accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: sectorsj
+--
 
-  // Получить все Email для аккаунта
-  Future<List<dynamic>> getEmailsByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$baseUrl/emails/$accountId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load emails');
-    }
-  }
+ALTER SEQUENCE public.accounts_id_seq OWNED BY public.accounts.id;
 
-  // Добавить Email
-  Future<String> addEmail(String email, String password, String salt, String description, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/emails/add'),
-      body: {
-        'email_address': email,
-        'password_hash': password,
-        'salt': salt,
-        'email_description': description,
-        'account_id': accountId.toString(),
-      },
-    );
 
-    if (response.statusCode == 200) {
-      return 'Email added successfully';
-    } else {
-      return 'Failed to add email';
-    }
-  }
+--
+-- TOC entry 204 (class 1259 OID 85441)
+-- Name: categories; Type: TABLE; Schema: public; Owner: sectorsj
+--
 
-  // Получить все Network Connections для аккаунта
-  Future<List<dynamic>> getNetworkConnectionsByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$baseUrl/network-connections/$accountId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load network connections');
-    }
-  }
+CREATE TABLE public.categories (
+    id bigint NOT NULL,
+    category_name character varying(255) NOT NULL,
+    description character varying(255)
+);
 
-  // Добавить сетевое подключение
-  Future<String> addNetworkConnection(String name, String ipv4, String ipv6, String login, String password, String salt, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/network-connections/add'),
-      body: {
-        'connection_name': name,
-        'ipv4': ipv4,
-        'ipv6': ipv6,
-        'network_login': login,
-        'password_hash': password,
-        'salt': salt,
-        'account_id': accountId.toString(),
-      },
-    );
 
-    if (response.statusCode == 200) {
-      return 'Network connection added successfully';
-    } else {
-      return 'Failed to add network connection';
-    }
-  }
+ALTER TABLE public.categories OWNER TO sectorsj;
 
-  // Получить все Websites для аккаунта
-  Future<List<dynamic>> getWebsitesByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$baseUrl/websites/$accountId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load websites');
-    }
-  }
+--
+-- TOC entry 203 (class 1259 OID 85439)
+-- Name: categories_id_seq; Type: SEQUENCE; Schema: public; Owner: sectorsj
+--
 
-  // Добавить Website
-  Future<String> addWebsite(String name, String url, String login, String password, String salt, String description, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/websites/add'),
-      body: {
-        'website_name': name,
-        'url': url,
-        'website_login': login,
-        'password_hash': password,
-        'salt': salt,
-        'website_description': description,
-        'account_id': accountId.toString(),
-      },
-    );
+CREATE SEQUENCE public.categories_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
-    if (response.statusCode == 200) {
-      return 'Website added successfully';
-    } else {
-      return 'Failed to add website';
-    }
-  }
-}
 
+ALTER SEQUENCE public.categories_id_seq OWNER TO sectorsj;
+
+--
+-- TOC entry 3068 (class 0 OID 0)
+-- Dependencies: 203
+-- Name: categories_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: sectorsj
+--
+
+ALTER SEQUENCE public.categories_id_seq OWNED BY public.categories.id;
+
+
+--
+-- TOC entry 213 (class 1259 OID 93171)
+-- Name: emails; Type: TABLE; Schema: public; Owner: sectorsj
+--
+
+CREATE TABLE public.emails (
+    id bigint NOT NULL,
+    email_address character varying(255) NOT NULL,
+    email_description character varying(255),
+    password_hash character varying(255) NOT NULL,
+    salt character varying(255) NOT NULL,
+    account_id bigint NOT NULL,
+    category_id bigint NOT NULL,
+    user_id bigint NOT NULL
+);
+
+
+ALTER TABLE public.emails OWNER TO sectorsj;
+
+--
+-- TOC entry 212 (class 1259 OID 93169)
+-- Name: emails_id_seq; Type: SEQUENCE; Schema: public; Owner: sectorsj
+--
+
+CREATE SEQUENCE public.emails_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.emails_id_seq OWNER TO sectorsj;
+
+--
+-- TOC entry 3069 (class 0 OID 0)
+-- Dependencies: 212
+-- Name: emails_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: sectorsj
+--
+
+ALTER SEQUENCE public.emails_id_seq OWNED BY public.emails.id;
+
+
+--
+-- TOC entry 205 (class 1259 OID 85461)
+-- Name: event_publication; Type: TABLE; Schema: public; Owner: sectorsj
+--
+
+CREATE TABLE public.event_publication (
+    id uuid NOT NULL,
+    completion_date timestamp(6) with time zone,
+    event_type character varying(255),
+    listener_id character varying(255),
+    publication_date timestamp(6) with time zone,
+    serialized_event character varying(255)
+);
+
+
+ALTER TABLE public.event_publication OWNER TO sectorsj;
+
+--
+-- TOC entry 202 (class 1259 OID 85411)
+-- Name: flyway_schema_history; Type: TABLE; Schema: public; Owner: sectorsj
+--
+
+CREATE TABLE public.flyway_schema_history (
+    installed_rank integer NOT NULL,
+    version character varying(50),
+    description character varying(200) NOT NULL,
+    type character varying(20) NOT NULL,
+    script character varying(1000) NOT NULL,
+    checksum integer,
+    installed_by character varying(100) NOT NULL,
+    installed_on timestamp without time zone DEFAULT now() NOT NULL,
+    execution_time integer NOT NULL,
+    success boolean NOT NULL
+);
+
+
+ALTER TABLE public.flyway_schema_history OWNER TO sectorsj;
+
+--
+-- TOC entry 207 (class 1259 OID 85471)
+-- Name: network_connections; Type: TABLE; Schema: public; Owner: sectorsj
+--
+
+CREATE TABLE public.network_connections (
+    id bigint NOT NULL,
+    connection_name character varying(255) NOT NULL,
+    ipv4 character varying(15),
+    ipv6 character varying(39),
+    network_login character varying(255) NOT NULL,
+    password_hash character varying(255) NOT NULL,
+    salt character varying(255) NOT NULL,
+    account_id bigint NOT NULL,
+    category_id bigint NOT NULL
+);
+
+
+ALTER TABLE public.network_connections OWNER TO sectorsj;
+
+--
+-- TOC entry 206 (class 1259 OID 85469)
+-- Name: network_connections_id_seq; Type: SEQUENCE; Schema: public; Owner: sectorsj
+--
+
+CREATE SEQUENCE public.network_connections_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.network_connections_id_seq OWNER TO sectorsj;
+
+--
+-- TOC entry 3070 (class 0 OID 0)
+-- Dependencies: 206
+-- Name: network_connections_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: sectorsj
+--
+
+ALTER SEQUENCE public.network_connections_id_seq OWNED BY public.network_connections.id;
+
+
+--
+-- TOC entry 209 (class 1259 OID 85492)
+-- Name: users; Type: TABLE; Schema: public; Owner: sectorsj
+--
+
+CREATE TABLE public.users (
+    id bigint NOT NULL,
+    phone character varying(255),
+    user_description character varying(255),
+    username character varying(255),
+    account_id bigint NOT NULL,
+    email_id bigint
+);
+
+
+ALTER TABLE public.users OWNER TO sectorsj;
+
+--
+-- TOC entry 208 (class 1259 OID 85490)
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: sectorsj
+--
+
+CREATE SEQUENCE public.users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.users_id_seq OWNER TO sectorsj;
+
+--
+-- TOC entry 3071 (class 0 OID 0)
+-- Dependencies: 208
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: sectorsj
+--
+
+ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+
+--
+-- TOC entry 211 (class 1259 OID 85503)
+-- Name: websites; Type: TABLE; Schema: public; Owner: sectorsj
+--
+
+CREATE TABLE public.websites (
+    id bigint NOT NULL,
+    description character varying(255),
+    password_hash character varying(255) NOT NULL,
+    salt character varying(255) NOT NULL,
+    url character varying(255) NOT NULL,
+    website_description character varying(255) NOT NULL,
+    website_login character varying(255) NOT NULL,
+    website_name character varying(255) NOT NULL,
+    account_id bigint NOT NULL,
+    category_id bigint NOT NULL
+);
+
+
+ALTER TABLE public.websites OWNER TO sectorsj;
+
+--
+-- TOC entry 210 (class 1259 OID 85501)
+-- Name: websites_id_seq; Type: SEQUENCE; Schema: public; Owner: sectorsj
+--
+
+CREATE SEQUENCE public.websites_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.websites_id_seq OWNER TO sectorsj;
+
+--
+-- TOC entry 3072 (class 0 OID 0)
+-- Dependencies: 210
+-- Name: websites_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: sectorsj
+--
+
+ALTER SEQUENCE public.websites_id_seq OWNED BY public.websites.id;
+
+
+--
+-- TOC entry 2896 (class 2604 OID 85429)
+-- Name: accounts id; Type: DEFAULT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.accounts ALTER COLUMN id SET DEFAULT nextval('public.accounts_id_seq'::regclass);
+
+
+--
+-- TOC entry 2898 (class 2604 OID 85444)
+-- Name: categories id; Type: DEFAULT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.categories ALTER COLUMN id SET DEFAULT nextval('public.categories_id_seq'::regclass);
+
+
+--
+-- TOC entry 2902 (class 2604 OID 93174)
+-- Name: emails id; Type: DEFAULT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.emails ALTER COLUMN id SET DEFAULT nextval('public.emails_id_seq'::regclass);
+
+
+--
+-- TOC entry 2899 (class 2604 OID 85474)
+-- Name: network_connections id; Type: DEFAULT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.network_connections ALTER COLUMN id SET DEFAULT nextval('public.network_connections_id_seq'::regclass);
+
+
+--
+-- TOC entry 2900 (class 2604 OID 85495)
+-- Name: users id; Type: DEFAULT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+
+--
+-- TOC entry 2901 (class 2604 OID 85506)
+-- Name: websites id; Type: DEFAULT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.websites ALTER COLUMN id SET DEFAULT nextval('public.websites_id_seq'::regclass);
+
+
+--
+-- TOC entry 2904 (class 2606 OID 85431)
+-- Name: accounts accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 2909 (class 2606 OID 85449)
+-- Name: categories categories_pkey; Type: CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.categories
+    ADD CONSTRAINT categories_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 2919 (class 2606 OID 93179)
+-- Name: emails emails_pkey; Type: CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.emails
+    ADD CONSTRAINT emails_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 2911 (class 2606 OID 85468)
+-- Name: event_publication event_publication_pkey; Type: CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.event_publication
+    ADD CONSTRAINT event_publication_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 2906 (class 2606 OID 85419)
+-- Name: flyway_schema_history flyway_schema_history_pk; Type: CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.flyway_schema_history
+    ADD CONSTRAINT flyway_schema_history_pk PRIMARY KEY (installed_rank);
+
+
+--
+-- TOC entry 2913 (class 2606 OID 85479)
+-- Name: network_connections network_connections_pkey; Type: CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.network_connections
+    ADD CONSTRAINT network_connections_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 2921 (class 2606 OID 93181)
+-- Name: emails uk_4jeq4kcq8fkfq1jhb5qp2mqj1; Type: CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.emails
+    ADD CONSTRAINT uk_4jeq4kcq8fkfq1jhb5qp2mqj1 UNIQUE (email_address);
+
+
+--
+-- TOC entry 2915 (class 2606 OID 85500)
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 2917 (class 2606 OID 85511)
+-- Name: websites websites_pkey; Type: CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.websites
+    ADD CONSTRAINT websites_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 2907 (class 1259 OID 85420)
+-- Name: flyway_schema_history_s_idx; Type: INDEX; Schema: public; Owner: sectorsj
+--
+
+CREATE INDEX flyway_schema_history_s_idx ON public.flyway_schema_history USING btree (success);
+
+
+--
+-- TOC entry 2922 (class 2606 OID 85549)
+-- Name: network_connections fk2wonxj8smxe5ddkgvgy21qmn6; Type: FK CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.network_connections
+    ADD CONSTRAINT fk2wonxj8smxe5ddkgvgy21qmn6 FOREIGN KEY (category_id) REFERENCES public.categories(id);
+
+
+--
+-- TOC entry 2928 (class 2606 OID 93192)
+-- Name: emails fk41wb6kvdemvj1602iltrfr1uo; Type: FK CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.emails
+    ADD CONSTRAINT fk41wb6kvdemvj1602iltrfr1uo FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- TOC entry 2926 (class 2606 OID 85554)
+-- Name: websites fk67r617vbx3rg2r68e0fxeky9y; Type: FK CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.websites
+    ADD CONSTRAINT fk67r617vbx3rg2r68e0fxeky9y FOREIGN KEY (account_id) REFERENCES public.accounts(id);
+
+
+--
+-- TOC entry 2927 (class 2606 OID 85564)
+-- Name: websites fk8pf79s1mdr5ha359a2fl5updd; Type: FK CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.websites
+    ADD CONSTRAINT fk8pf79s1mdr5ha359a2fl5updd FOREIGN KEY (category_id) REFERENCES public.categories(id);
+
+
+--
+-- TOC entry 2924 (class 2606 OID 85575)
+-- Name: users fk_users_account_id; Type: FK CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT fk_users_account_id FOREIGN KEY (account_id) REFERENCES public.accounts(id);
+
+
+--
+-- TOC entry 2925 (class 2606 OID 106578)
+-- Name: users fk_users_email_id; Type: FK CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT fk_users_email_id FOREIGN KEY (email_id) REFERENCES public.emails(id) NOT VALID;
+
+
+--
+-- TOC entry 2929 (class 2606 OID 93182)
+-- Name: emails fkcs0wj7aej9q5ibgryd2nbo6v7; Type: FK CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.emails
+    ADD CONSTRAINT fkcs0wj7aej9q5ibgryd2nbo6v7 FOREIGN KEY (account_id) REFERENCES public.accounts(id);
+
+
+--
+-- TOC entry 2930 (class 2606 OID 93187)
+-- Name: emails fkgyyal19v3egcs3doivvcim3gt; Type: FK CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.emails
+    ADD CONSTRAINT fkgyyal19v3egcs3doivvcim3gt FOREIGN KEY (category_id) REFERENCES public.categories(id);
+
+
+--
+-- TOC entry 2923 (class 2606 OID 85539)
+-- Name: network_connections fkqbbe7g4884ywkq1xuum1n6ufx; Type: FK CONSTRAINT; Schema: public; Owner: sectorsj
+--
+
+ALTER TABLE ONLY public.network_connections
+    ADD CONSTRAINT fkqbbe7g4884ywkq1xuum1n6ufx FOREIGN KEY (account_id) REFERENCES public.accounts(id);
+
+
+--
+-- TOC entry 3066 (class 0 OID 0)
+-- Dependencies: 4
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
+-- Completed on 2024-10-22 22:24:13
+
+--
+-- PostgreSQL database dump complete
+--
 
