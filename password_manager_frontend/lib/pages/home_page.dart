@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'emails_tab.dart';
+import '../widgets/emails_tab.dart';
 import 'network_connections_tab.dart';
 import 'websites_tab.dart';
 

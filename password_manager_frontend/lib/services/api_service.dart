@@ -5,34 +5,34 @@ class ApiService {
   final String baseUrl = 'http://localhost:8080';
 
   // Получить все Email для аккаунта
-  Future<List<dynamic>> getEmailsByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$baseUrl/emails/$accountId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load emails');
-    }
-  }
+  // Future<List<dynamic>> getEmailsByAccount(int accountId) async {
+  //   final response = await http.get(Uri.parse('$baseUrl/emails/$accountId'));
+  //   if (response.statusCode == 200) {
+  //     return jsonDecode(response.body);
+  //   } else {
+  //     throw Exception('Failed to load emails');
+  //   }
+  // }
 
   // Добавить Email
-  Future<String> addEmail(String email, String password, String salt, String description, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/emails/add'),
-      body: {
-        'email_address': email,
-        'password_hash': password,
-        'salt': salt,
-        'email_description': description,
-        'account_id': accountId.toString(),
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return 'Email added successfully';
-    } else {
-      return 'Failed to add email';
-    }
-  }
+  // Future<String> addEmail(String email, String password, String salt, String description, int accountId) async {
+  //   final response = await http.post(
+  //     Uri.parse('$baseUrl/emails/add'),
+  //     body: {
+  //       'email_address': email,
+  //       'password_hash': password,
+  //       'salt': salt,
+  //       'email_description': description,
+  //       'account_id': accountId.toString(),
+  //     },
+  //   );
+  //
+  //   if (response.statusCode == 200) {
+  //     return 'Email added successfully';
+  //   } else {
+  //     return 'Failed to add email';
+  //   }
+  // }
 
   // Получить все Network Connections для аккаунта
   Future<List<dynamic>> getNetworkConnectionsByAccount(int accountId) async {
