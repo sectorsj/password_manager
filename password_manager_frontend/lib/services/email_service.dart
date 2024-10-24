@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:password_manager_frontend/model/email.dart';
+import 'package:password_manager_frontend/models/email.dart';
 
 class EmailService {
   final String baseUrl = 'http://localhost:8080';

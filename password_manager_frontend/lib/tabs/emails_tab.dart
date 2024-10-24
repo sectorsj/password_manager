@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Для копирования пароля
-import 'package:password_manager_frontend/services/api_service.dart';
+import 'package:password_manager_frontend/models/email.dart';
 import 'package:password_manager_frontend/services/email_service.dart';
+import 'package:password_manager_frontend/pages/email_form_page.dart';
 
 class EmailsTab extends StatefulWidget {
   const EmailsTab({Key? key}) : super(key: key);
@@ -11,9 +12,9 @@ class EmailsTab extends StatefulWidget {
 }
 
 class _EmailsTabState extends State<EmailsTab> {
-  final ApiService apiService = ApiService();
+  // final ApiService apiService = ApiService();
   final EmailService emailService = EmailService();
-  List<dynamic> emails = [];
+  List<Email> _emails = [];
   Map<int, bool> _showPasswordMap = {};  // Отображение пароля для каждого элемента
 
   @override
@@ -24,10 +25,46 @@ class _EmailsTabState extends State<EmailsTab> {
 
   Future<void> _loadEmails() async {
     // Предполагаем, что ID аккаунта 1 — временное решение
-    List<dynamic> result = await emailService.getEmails(1);
+    List<Email> emails = await emailService.getEmails(1);
     setState(() {
-      emails = result;
+      _emails = emails;
     });
+  }
+
+  void _showEmailDetails(BuildContext context, Email email) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(email.address),
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Description: ${email.description}'),
+                Text('Salt: ${email.salt}'),
+                Text('Category ID: ${email.categoryId}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Close'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  },
+              ),
+            ],
+          );
+        },
+      );
+  }
+
+  void _addEmail(BuildContext context) async {
+    await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const EmailFormPage()),
+    );
+    _loadEmails();
   }
 
   @override
@@ -35,6 +72,12 @@ class _EmailsTabState extends State<EmailsTab> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Emails'),
+        actions: [
+          IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _addEmail(context)
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -45,21 +88,21 @@ class _EmailsTabState extends State<EmailsTab> {
             DataColumn(label: Text('Пароль')),
             DataColumn(label: Text('Описание')),
           ],
-          rows: emails.asMap().entries.map((entry) {
-            int index = entry.key + 1;
-            var email = entry.value;
+          rows: _emails.asMap().entries.map((entry) {
+            int index = entry.key;
+            Email email = entry.value;
 
             // Получаем текущее состояние отображения пароля
             bool _showPassword = _showPasswordMap[index] ?? false;
 
             return DataRow(
               cells: [
-                DataCell(Text(index.toString())),
-                DataCell(Text(email['email_address'])),  // email_address
+                DataCell(Text((index + 1).toString())),
+                DataCell(Text(email.address)),  // email_address
                 DataCell(Row(
                   children: [
                     // Отображаем пароль или скрываем его
-                    Text(_showPassword ? email['password_hash'] : '****'),
+                    Text(_showPassword ? email.passwordHash : '****'),
                     IconButton(
                       icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
                       onPressed: () {
@@ -71,7 +114,7 @@ class _EmailsTabState extends State<EmailsTab> {
                     IconButton(
                       icon: const Icon(Icons.copy),
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: email['password_hash']));
+                        Clipboard.setData(ClipboardData(text: email.passwordHash));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Пароль скопирован')),
                         );
@@ -79,7 +122,7 @@ class _EmailsTabState extends State<EmailsTab> {
                     ),
                   ],
                 )),
-                DataCell(Text(email['email_description'] ?? '')),  // email_description
+                DataCell(Text(email.description)),  // email_description
               ],
             );
           }).toList(),
