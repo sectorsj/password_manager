@@ -30,9 +30,9 @@ class EmailService {
     );
 
     if (response.statusCode == 200) {
-      return 'Email added successfully';
+      return 'Почта добавлена успешно';
     } else {
-      return 'Failed to add email';
+      return 'Ошибка при добавлении новой почты';
     }
   }
 }
