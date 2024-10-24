@@ -1,14 +1,16 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:password_manager_frontend/models/network_connection.dart';
 
 class NetworkConnectionService {
   final String _baseUrl = 'http://localhost:8080';
 
   // Получить все Email для аккаунта
-  Future<List<dynamic>> getNetworkConnectionsByAccount(int accountId) async {
+  Future<List<NetworkConnection>> getNetworkConnectionsByAccount(int accountId) async {
     final response = await http.get(Uri.parse('$_baseUrl/network-connections/$accountId'));
     if (response.statusCode == 200) {
-      return jsonDecode(response.body);
+      final jsonData = json.decode(response.body) as List<dynamic>;
+      return jsonData.map((item) => NetworkConnection.fromJson(item)).toList();
     } else {
       throw Exception('Неудача при загрузке сетевых подключений');
     }
@@ -30,7 +32,7 @@ class NetworkConnectionService {
     );
 
     if (response.statusCode == 200) {
-      return ' Сетевое подключение добавлено успешно';
+      return 'Сетевое подключение добавлено успешно';
     } else {
       return 'Ошибка при добавлении нового Сетевое подключения';
     }
