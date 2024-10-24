@@ -35,36 +35,36 @@ class ApiService {
   // }
 
   // Получить все Network Connections для аккаунта
-  Future<List<dynamic>> getNetworkConnectionsByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$baseUrl/network-connections/$accountId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load network connections');
-    }
-  }
+  // Future<List<dynamic>> getNetworkConnectionsByAccount(int accountId) async {
+  //   final response = await http.get(Uri.parse('$baseUrl/network-connections/$accountId'));
+  //   if (response.statusCode == 200) {
+  //     return jsonDecode(response.body);
+  //   } else {
+  //     throw Exception('Failed to load network connections');
+  //   }
+  // }
 
   // Добавить сетевое подключение
-  Future<String> addNetworkConnection(String name, String ipv4, String ipv6, String login, String password, String salt, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/network-connections/add'),
-      body: {
-        'connection_name': name,
-        'ipv4': ipv4,
-        'ipv6': ipv6,
-        'network_login': login,
-        'password_hash': password,
-        'salt': salt,
-        'account_id': accountId.toString(),
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return 'Network connection added successfully';
-    } else {
-      return 'Failed to add network connection';
-    }
-  }
+  // Future<String> addNetworkConnection(String name, String ipv4, String ipv6, String login, String password, String salt, int accountId) async {
+  //   final response = await http.post(
+  //     Uri.parse('$baseUrl/network-connections/add'),
+  //     body: {
+  //       'connection_name': name,
+  //       'ipv4': ipv4,
+  //       'ipv6': ipv6,
+  //       'network_login': login,
+  //       'password_hash': password,
+  //       'salt': salt,
+  //       'account_id': accountId.toString(),
+  //     },
+  //   );
+  //
+  //   if (response.statusCode == 200) {
+  //     return 'Network connection added successfully';
+  //   } else {
+  //     return 'Failed to add network connection';
+  //   }
+  // }
 
   // Получить все Websites для аккаунта
   Future<List<dynamic>> getWebsitesByAccount(int accountId) async {
