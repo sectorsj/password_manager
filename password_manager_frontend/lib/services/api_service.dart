@@ -67,34 +67,34 @@ class ApiService {
   // }
 
   // Получить все Websites для аккаунта
-  Future<List<dynamic>> getWebsitesByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$baseUrl/websites/$accountId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Failed to load websites');
-    }
-  }
+  // Future<List<dynamic>> getWebsitesByAccount(int accountId) async {
+  //   final response = await http.get(Uri.parse('$baseUrl/websites/$accountId'));
+  //   if (response.statusCode == 200) {
+  //     return jsonDecode(response.body);
+  //   } else {
+  //     throw Exception('Failed to load websites');
+  //   }
+  // }
 
   // Добавить Website
-  Future<String> addWebsite(String name, String url, String login, String password, String salt, String description, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/websites/add'),
-      body: {
-        'website_name': name,
-        'url': url,
-        'website_login': login,
-        'password_hash': password,
-        'salt': salt,
-        'website_description': description,
-        'account_id': accountId.toString(),
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return 'Website added successfully';
-    } else {
-      return 'Failed to add website';
-    }
-  }
+  // Future<String> addWebsite(String name, String url, String login, String password, String salt, String description, int accountId) async {
+  //   final response = await http.post(
+  //     Uri.parse('$baseUrl/websites/add'),
+  //     body: {
+  //       'website_name': name,
+  //       'url': url,
+  //       'website_login': login,
+  //       'password_hash': password,
+  //       'salt': salt,
+  //       'website_description': description,
+  //       'account_id': accountId.toString(),
+  //     },
+  //   );
+  //
+  //   if (response.statusCode == 200) {
+  //     return 'Website added successfully';
+  //   } else {
+  //     return 'Failed to add website';
+  //   }
+  // }
 }
