@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Для копирования пароля
-import 'package:password_manager_frontend/services/api_service.dart';
+import 'package:password_manager_frontend/services/network_connection_service.dart';
 
 class NetworkConnectionsTab extends StatefulWidget {
   const NetworkConnectionsTab({Key? key}) : super(key: key);
@@ -10,7 +10,7 @@ class NetworkConnectionsTab extends StatefulWidget {
 }
 
 class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
-  final ApiService apiService = ApiService();
+  final NetworkConnectionService networkConnectionServiceService = NetworkConnectionService();
   List<dynamic> connections = [];
   bool _showPassword = false;
 
@@ -21,7 +21,7 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
   }
 
   Future<void> _loadNetworkConnections() async {
-    List<dynamic> result = await apiService.getNetworkConnectionsByAccount(1);  // Пример ID аккаунта
+    List<dynamic> result = await networkConnectionServiceService.getNetworkConnectionsByAccount(1);  // Пример ID аккаунта
     setState(() {
       connections = result;
     });

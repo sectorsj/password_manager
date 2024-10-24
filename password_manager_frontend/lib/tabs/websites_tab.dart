@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Для копирования пароля
-import 'package:password_manager_frontend/services/api_service.dart';
+import 'package:password_manager_frontend/services/website_service.dart';
 
 class WebsitesTab extends StatefulWidget {
   const WebsitesTab({Key? key}) : super(key: key);
@@ -10,7 +10,7 @@ class WebsitesTab extends StatefulWidget {
 }
 
 class _WebsitesTabState extends State<WebsitesTab> {
-  final ApiService apiService = ApiService();
+  final WebsiteService websiteService = WebsiteService();
   List<dynamic> websites = [];
   bool _showPassword = false;
 
@@ -21,7 +21,7 @@ class _WebsitesTabState extends State<WebsitesTab> {
   }
 
   Future<void> _loadWebsites() async {
-    List<dynamic> result = await apiService.getWebsitesByAccount(
+    List<dynamic> result = await websiteService.getWebsitesByAccount(
         1); // Пример ID аккаунта
     setState(() {
       websites = result;
