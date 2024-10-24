@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../tabs/emails_tab.dart';
-import 'network_connections_tab.dart';
-import 'websites_tab.dart';
+import '../tabs/network_connections_tab.dart';
+import '../tabs/websites_tab.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
