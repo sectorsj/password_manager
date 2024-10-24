@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Для копирования пароля
 import 'package:password_manager_frontend/services/api_service.dart';
+import 'package:password_manager_frontend/services/email_service.dart';
 
 class EmailsTab extends StatefulWidget {
   const EmailsTab({Key? key}) : super(key: key);
@@ -11,6 +12,7 @@ class EmailsTab extends StatefulWidget {
 
 class _EmailsTabState extends State<EmailsTab> {
   final ApiService apiService = ApiService();
+  final EmailService emailService = EmailService();
   List<dynamic> emails = [];
   Map<int, bool> _showPasswordMap = {};  // Отображение пароля для каждого элемента
 
@@ -22,7 +24,7 @@ class _EmailsTabState extends State<EmailsTab> {
 
   Future<void> _loadEmails() async {
     // Предполагаем, что ID аккаунта 1 — временное решение
-    List<dynamic> result = await apiService.getEmailsByAccount(1);
+    List<dynamic> result = await emailService.getEmails(1);
     setState(() {
       emails = result;
     });
