@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Для копирования пароля
+import 'package:password_manager_frontend/models/network_connection.dart';
 import 'package:password_manager_frontend/services/network_connection_service.dart';
 
 class NetworkConnectionsTab extends StatefulWidget {
@@ -11,8 +12,8 @@ class NetworkConnectionsTab extends StatefulWidget {
 
 class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
   final NetworkConnectionService networkConnectionServiceService = NetworkConnectionService();
-  List<dynamic> connections = [];
-  bool _showPassword = false;
+  List<NetworkConnection> _connections = [];
+  Map<int, bool> _showPasswordMap = {};
 
   @override
   void initState() {
@@ -21,9 +22,9 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
   }
 
   Future<void> _loadNetworkConnections() async {
-    List<dynamic> result = await networkConnectionServiceService.getNetworkConnectionsByAccount(1);  // Пример ID аккаунта
+    List<NetworkConnection> connections = await networkConnectionServiceService.getNetworkConnectionsByAccount(1);  // Пример ID аккаунта
     setState(() {
-      connections = result;
+      _connections = connections;
     });
   }
 
@@ -44,32 +45,34 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
             DataColumn(label: Text('Имя пользователя')),
             DataColumn(label: Text('Пароль')),
           ],
-          rows: connections.asMap().entries.map((entry) {
-            int index = entry.key + 1;
-            var connection = entry.value;
+          rows: _connections.asMap().entries.map((entry) {
+            int index = entry.key;
+            NetworkConnection connection = entry.value;
+
+            bool _showPassword = _showPasswordMap[index] ?? false;
 
             return DataRow(
               cells: [
-                DataCell(Text(index.toString())),
-                DataCell(Text(connection[1])),  // connection_name
-                DataCell(Text(connection[2])),  // ipv4
-                DataCell(Text(connection[3])),  // ipv6
-                DataCell(Text(connection[4])),  // login
+                DataCell(Text((index + 1).toString())),
+                DataCell(Text(connection.name)),  // connection_name
+                DataCell(Text(connection.ipv4)),  // ipv4
+                DataCell(Text(connection.ipv6)),  // ipv6
+                DataCell(Text(connection.login)),  // login
                 DataCell(Row(
                   children: [
-                    Text(_showPassword ? connection[5] : '****'), // пароль
+                    Text(_showPassword ? connection.passwordHash : '****'), // пароль
                     IconButton(
                       icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
                       onPressed: () {
                         setState(() {
-                          _showPassword = !_showPassword;
+                          _showPasswordMap[index] = !_showPassword;
                         });
                       },
                     ),
                     IconButton(
                       icon: const Icon(Icons.copy),
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: connection[5]));
+                        Clipboard.setData(ClipboardData(text: connection.passwordHash));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Пароль скопирован')),
                         );
