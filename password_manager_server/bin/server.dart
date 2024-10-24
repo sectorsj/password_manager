@@ -102,13 +102,14 @@ void main() async {
     var body = Uri.splitQueryString(data);
 
     await connection.query(
-      'INSERT INTO emails (email_address, password_hash, salt, email_description, account_id) VALUES (@address, @password, @salt, @description, @accountId)',
+      'INSERT INTO emails (email_address, password_hash, salt, email_description, account_id, category_id) VALUES (@address, @password, @salt, @description, @accountId, @categoryId)',
       substitutionValues: {
         'address': body['email_address'],
         'password': body['password_hash'],
         'salt': body['salt'],
         'description': body['email_description'],
         'accountId': int.parse(body['account_id']!),
+        'categoryId': int.parse(body['category_id']!),
       },
     );
     return Response.ok('Email added successfully');

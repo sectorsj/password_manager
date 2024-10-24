@@ -69,6 +69,7 @@ class _EmailFormPageState extends State<EmailFormPage> {
                     String salt = hashedData['salt']!;
                     String description = _descriptionController.text;
                     int accountId = 1; // Предполагаем, что ID аккаунта 1
+                    int categoryId = 1; // Предполагаем, что ID аккаунта 1
 
                     String result = await _emailService.addEmail(
                       email,
@@ -76,6 +77,7 @@ class _EmailFormPageState extends State<EmailFormPage> {
                       salt,
                       description,
                       accountId,
+                      categoryId,
                     );
 
                     ScaffoldMessenger.of(context).showSnackBar(

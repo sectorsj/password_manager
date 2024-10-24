@@ -17,7 +17,7 @@ class EmailService {
   }
 
   // Добавить Email
-  Future<String> addEmail(String email, String password, String salt, String description, int accountId) async {
+  Future<String> addEmail(String email, String password, String salt, String description, int accountId, int categoryId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/emails/add'),
       body: {
@@ -26,6 +26,7 @@ class EmailService {
         'salt': salt,
         'email_description': description,
         'account_id': accountId.toString(),
+        'category_id': categoryId.toString(),
       },
     );
 
