@@ -136,9 +136,9 @@ lib/generated_plugin_registrant.dart
 *.webp
 *.xml
 *.json
-!pubspec.yaml
-!analysis_options.yaml
-!.metadata
+pubspec.yaml
+analysis_options.yaml
+.metadata
 
 
 /android/.gitignore
@@ -152,3 +152,7 @@ lib/generated_plugin_registrant.dart
 /password_manager_frontend/macos/.gitignore
 /password_manager_frontend/windows/.gitignore
 /windows/.gitignore
+common/utility/generated
+common/utility/analysis_options.yaml
+password_manager_frontend/analysis_options.yaml
+
