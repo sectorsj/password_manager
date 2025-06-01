@@ -145,3 +145,10 @@ lib/generated_plugin_registrant.dart
 /common/utility/.gitignore
 /ios/.gitignore
 /linux/.gitignore
+/macos/.gitignore
+/password_manager_frontend/android/.gitignore
+/password_manager_frontend/ios/.gitignore
+/password_manager_frontend/linux/.gitignore
+/password_manager_frontend/macos/.gitignore
+/password_manager_frontend/windows/.gitignore
+/windows/.gitignore
