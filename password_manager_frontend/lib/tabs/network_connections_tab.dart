@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Для копирования пароля
 import 'package:password_manager_frontend/models/network_connection.dart';
@@ -54,13 +56,13 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
             return DataRow(
               cells: [
                 DataCell(Text((index + 1).toString())),
-                DataCell(Text(connection.name)),  // connection_name
-                DataCell(Text(connection.ipv4)),  // ipv4
-                DataCell(Text(connection.ipv6)),  // ipv6
-                DataCell(Text(connection.login)),  // login
+                DataCell(Text(connection.networkConnectionName)),  // connection_name
+                DataCell(Text(connection.ipv4 ?? '—')),  // ipv4
+                DataCell(Text(connection.ipv6 ?? '—')),  // ipv6
+                DataCell(Text(connection.networkConnectionLogin)),  // login
                 DataCell(Row(
                   children: [
-                    Text(_showPassword ? connection.passwordHash : '****'), // пароль
+                    Text(_showPassword ? String.fromCharCodes(connection.passwordHash) : '****'), // пароль
                     IconButton(
                       icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
                       onPressed: () {
@@ -72,7 +74,8 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
                     IconButton(
                       icon: const Icon(Icons.copy),
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: connection.passwordHash));
+                        Clipboard.setData(
+                            ClipboardData(text: base64Encode(connection.passwordHash)));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Пароль скопирован')),
                         );

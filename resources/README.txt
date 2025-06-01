@@ -175,7 +175,54 @@ SplashPanel это экран который должен быть по умол
     - Например, классы User, Website, Email, NetworkConnection и т.д.
 
 
+итак с учетом всего вышесказанного, напиши полный код классов:
+- email_form_page.dart
+- website.dart
+- auth_service.dart
+- validators.dart
+- server.dart
+- database_connection.dart
+- auth_routes.dart
+- email_routes.dart
+- network_connection_routes.dart
+- websites_routes.dart
+- session.dart
 
 
 
+А может стоит:
+accountId - подтянуть из текущего аккаунта после авторизации,
+таким образом после авторизации нужно:
+начинать две процедуры:
+1. установить почту по умолчанию
+2. установить пользователя по умолчанию
 
+тоесть после регистрации в таблицах должны появиться записи:
+- emails:
+    1. id - автоинкремент
+    2. email_address - accounts.email
+    3. email_description - null
+    4. password_hash - null
+    5. salt - null
+    6. account_id - accounts.id
+    7. category_id - null
+    8. user_id - accounts.account_login
+- users:
+    1. id - автоинкремент
+    2. user_name - accounts.account_login
+    3. phone - null
+    4. user_description - null
+    5. account_id - accounts.id
+    6. email_id - emails.id
+
+
+Пример использования метода (create_account_with_user_and_email):
+SELECT * FROM create_account_with_user_and_email(
+    'mylogin',
+    'user@example.com',
+    decode('cGFzc3dvcmQ=', 'base64'),  -- password_hash (base64)
+    decode('c2FsdDEyMw==', 'base64'),  -- salt (base64)
+    'Имя пользователя',
+    '+79991234567',
+    'Описание'
+);

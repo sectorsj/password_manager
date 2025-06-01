@@ -46,7 +46,7 @@
 
 
 ```
-password_manager/
+password_manager_frontend/
 ├── lib/
 │   ├── main.dart
 │   ├── pages/

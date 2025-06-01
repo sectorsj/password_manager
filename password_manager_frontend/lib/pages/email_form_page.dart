@@ -1,10 +1,20 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:password_manager_frontend/models/email.dart';
 import 'package:password_manager_frontend/services/email_service.dart';
 import 'package:hashing_utility_package/hashing_utility.dart';
 
 class EmailFormPage extends StatefulWidget {
-  const EmailFormPage({Key? key}) : super(key: key);
+  final int accountId;
+  final int? categoryId;
+  final int? userId;
+
+  const EmailFormPage({
+    Key? key,
+    required this.accountId,
+    this.categoryId,
+    this.userId,
+  }) : super(key: key);
 
   @override
   _EmailFormPageState createState() => _EmailFormPageState();
@@ -22,7 +32,7 @@ class _EmailFormPageState extends State<EmailFormPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Email'),
+        title: const Text('Добавить почту'),
       ),
       body: Form(
         key: _formKey,
@@ -34,60 +44,53 @@ class _EmailFormPageState extends State<EmailFormPage> {
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter an email';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Введите email' : null,
               ),
               TextFormField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
+                decoration: const InputDecoration(labelText: 'Пароль'),
                 obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a password';
-                  }
-                  return null;
-                },
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Введите пароль' : null,
               ),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
+                decoration: const InputDecoration(labelText: 'Описание (необязательно)'),
               ),
-              const SizedBox(height: 16.0),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
-                    Map<String, String> hashedData =
-                        await HashingUtility.hashPassword(
-                            _passwordController.text);
-
-                    String email = _emailController.text;
-                    String password = hashedData['hash']!;
-                    String salt = hashedData['salt']!;
-                    String description = _descriptionController.text;
-                    int accountId = 1; // Предполагаем, что ID аккаунта 1
-                    int categoryId = 1; // Предполагаем, что ID аккаунта 1
-
-                    String result = await _emailService.addEmail(
-                      email,
-                      password,
-                      salt,
-                      description,
-                      accountId,
-                      categoryId,
+                    final hashed = await HashingUtility.hashPassword(
+                      _passwordController.text,
                     );
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(result)),
+                    final email = Email(
+                      id: 0,
+                      emailAddress: _emailController.text,
+                      passwordHash: hashed['hash']!,
+                      salt: hashed['salt']!,
+                      emailDescription: _descriptionController.text,
+                      accountId: widget.accountId,
+                      categoryId: widget.categoryId,
+                      userId: widget.userId,
                     );
 
-                    Navigator.pop(context);
+                    try {
+                      final result = await _emailService.addEmail(email);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(result)),
+                      );
+                      Navigator.pop(context);
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Ошибка при добавлении')),
+                      );
+                    }
                   }
                 },
-                child: const Text('Save'),
+                child: const Text('Сохранить'),
               ),
             ],
           ),

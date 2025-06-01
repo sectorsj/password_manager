@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Для копирования пароля
 import 'package:password_manager_frontend/models/email.dart';
+import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/services/email_service.dart';
 import 'package:password_manager_frontend/pages/email_form_page.dart';
+import 'package:provider/provider.dart';
 
 class EmailsTab extends StatefulWidget {
   const EmailsTab({Key? key}) : super(key: key);
@@ -24,7 +28,7 @@ class _EmailsTabState extends State<EmailsTab> {
   }
 
   Future<void> _loadEmails() async {
-    // Предполагаем, что ID аккаунта 1 — временное решение
+
     List<Email> emails = await emailService.getEmails(1);
     setState(() {
       _emails = emails;
@@ -36,12 +40,12 @@ class _EmailsTabState extends State<EmailsTab> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text(email.address),
+            title: Text(email.emailAddress),
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Description: ${email.description}'),
+                Text('Description: ${email.emailDescription}'),
                 Text('Salt: ${email.salt}'),
                 Text('Category ID: ${email.categoryId}'),
               ],
@@ -60,9 +64,14 @@ class _EmailsTabState extends State<EmailsTab> {
   }
 
   void _addEmail(BuildContext context) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    int accountId = authService.accountId;
+    int categoryId = authService.categoryId;
+    int userId = authService.userId;
+
     await Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const EmailFormPage()),
+        MaterialPageRoute(builder: (context) => EmailFormPage(accountId: accountId, categoryId: categoryId, userId: userId)),
     );
     _loadEmails();
   }
@@ -98,11 +107,16 @@ class _EmailsTabState extends State<EmailsTab> {
             return DataRow(
               cells: [
                 DataCell(Text((index + 1).toString())),
-                DataCell(Text(email.address)),  // email_address
+                DataCell(Text(email.emailAddress)),  // email_address
                 DataCell(Row(
                   children: [
                     // Отображаем пароль или скрываем его
-                    Text(_showPassword ? email.passwordHash : '****'),
+                    Text(_showPassword
+                        ? (email.passwordHash != null
+                          ? String.fromCharCodes(email.passwordHash!)
+                        : '[нет пароля]')
+                      : '****',
+                    ),
                     IconButton(
                       icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
                       onPressed: () {
@@ -114,7 +128,13 @@ class _EmailsTabState extends State<EmailsTab> {
                     IconButton(
                       icon: const Icon(Icons.copy),
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: email.passwordHash));
+                        Clipboard.setData(
+                            ClipboardData(
+                                text: email.passwordHash != null
+                                    ? base64Encode(email.passwordHash!)
+                                    : '',
+                            ),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Пароль скопирован')),
                         );
@@ -122,7 +142,7 @@ class _EmailsTabState extends State<EmailsTab> {
                     ),
                   ],
                 )),
-                DataCell(Text(email.description)),  // email_description
+                DataCell(Text(email.emailDescription ?? '')),  // email_description
               ],
             );
           }).toList(),

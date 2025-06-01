@@ -1,41 +1,20 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:typed_data';
+import '../models/website.dart';
+import 'base_service.dart';
 
-
-class WebsiteService {
-  final String _baseUrl = 'http://localhost:8080';
-
-  // Получить все Websites для аккаунта
-  Future<List<dynamic>> getWebsitesByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$_baseUrl/websites/$accountId'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception('Ошибка при загрузке вебсайтов');
-    }
+class WebsiteService extends BaseService {
+  Future<List<Website>> getWebsitesByAccount(int accountId) async {
+    final jsonData = await get('/websites/$accountId');
+    return (jsonData as List).map((e) => Website.fromJson(e)).toList();
   }
 
-// Добавить Website
-  Future<String> addWebsite(String name, String url, String login, String password, String salt, String description, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/websites/add'),
-      body: {
-        'website_name': name,
-        'url': url,
-        'website_login': login,
-        'password_hash': password,
-        'salt': salt,
-        'website_description': description,
-        'account_id': accountId.toString(),
-      },
-    );
+  Future<String> addWebsite(Website website) async {
+    final jsonBody = website.toJson()..updateAll((k, v) {
+      if (v is Uint8List) return v.toList();
+      return v;
+    });
 
-    if (response.statusCode == 200) {
-      return 'Вебсайт успешно добавлен';
-    } else {
-      return 'Ошибка при добавлении нового вебсайта';
-    }
+    await post('/websites/add', jsonBody);
+    return 'Вебсайт (Website) добавлен успешно';
   }
 }
-
-

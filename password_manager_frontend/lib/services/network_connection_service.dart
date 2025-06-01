@@ -1,40 +1,24 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:typed_data';
+
 import 'package:password_manager_frontend/models/network_connection.dart';
+import 'package:password_manager_frontend/services/base_service.dart';
 
-class NetworkConnectionService {
-  final String _baseUrl = 'http://localhost:8080';
+class NetworkConnectionService extends BaseService {
 
-  // Получить все Email для аккаунта
+  // Получить все Сетевое подключение для аккаунта
   Future<List<NetworkConnection>> getNetworkConnectionsByAccount(int accountId) async {
-    final response = await http.get(Uri.parse('$_baseUrl/network-connections/$accountId'));
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body) as List<dynamic>;
-      return jsonData.map((item) => NetworkConnection.fromJson(item)).toList();
-    } else {
-      throw Exception('Неудача при загрузке сетевых подключений');
-    }
+    final jsonData = await get('/network-connections/$accountId');
+    return (jsonData as List).map((item) => NetworkConnection.fromJson(item)).toList();
   }
 
   // Добавить Сетевое подключение
-  Future<String> addNetworkConnection(String name, String ipv4, String ipv6, String login, String password, String salt, int accountId) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/network-connections/add'),
-      body: {
-        'connection_name': name,
-        'ipv4': ipv4,
-        'ipv6': ipv6,
-        'network_login': login,
-        'password_hash': password,
-        'salt': salt,
-        'account_id': accountId.toString(),
-      },
-    );
+  Future<String> addNetworkConnection(NetworkConnection conn) async {
+    final jsonBody = conn.toJson()..updateAll((k, v) {
+      if (v is Uint8List) return v.toList();
+      return v;
+    });
 
-    if (response.statusCode == 200) {
-      return 'Сетевое подключение добавлено успешно';
-    } else {
-      return 'Ошибка при добавлении нового Сетевое подключения';
-    }
+    await post('/network-connections/add', jsonBody);
+    return 'Сетевое подключение (Network-connection) добавлено успешно';
   }
 }

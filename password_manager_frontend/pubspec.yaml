@@ -33,8 +33,15 @@ dependencies:
   shared_preferences: ^2.0.15
   http: ^1.2.2
   cupertino_icons: ^1.0.8
+  provider: ^6.0.5
   hashing_utility_package:
     path: ../common/utility
+  json_annotation: ^4.8.1
+  drift: ^2.15.0
+  sqlite3_flutter_libs: any
+  path_provider: any
+  path: any
+
 
 dev_dependencies:
   flutter_test:
@@ -46,6 +53,11 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^4.0.0
+
+
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+  drift_dev: ^2.15.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

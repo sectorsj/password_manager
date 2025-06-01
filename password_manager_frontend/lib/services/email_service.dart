@@ -1,39 +1,23 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'dart:typed_data';
 import 'package:password_manager_frontend/models/email.dart';
+import 'package:password_manager_frontend/services/base_service.dart';
 
-class EmailService {
-  final String baseUrl = 'http://localhost:8080';
+class EmailService extends BaseService {
 
   // Получить все Email для аккаунта
   Future<List<Email>> getEmails(int accountId) async {
-    final response = await http.get(Uri.parse('$baseUrl/emails/$accountId'));
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body) as List<dynamic>;
-      return jsonData.map((item) => Email.fromJson(item)).toList();
-    } else {
-      throw Exception('Неудача при загрузке электронных почт');
-    }
+    final jsonData = await get('/emails/$accountId');
+      return (jsonData as List).map((item) => Email.fromJson(item)).toList();
   }
 
   // Добавить Email
-  Future<String> addEmail(String email, String password, String salt, String description, int accountId, int categoryId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/emails/add'),
-      body: {
-        'email_address': email,
-        'password_hash': password,
-        'salt': salt,
-        'email_description': description,
-        'account_id': accountId.toString(),
-        'category_id': categoryId.toString(),
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return 'Почта добавлена успешно';
-    } else {
-      return 'Ошибка при добавлении новой почты';
-    }
+  Future<String> addEmail(Email email) async {
+    final jsonBody = email.toJson()
+      ..updateAll((k, v) {
+        if (v is Uint8List) return v.toList();
+        return v;
+      });
+    await post('/emails/add', jsonBody);
+    return 'Почта (Email) добавлена успешно';
   }
 }

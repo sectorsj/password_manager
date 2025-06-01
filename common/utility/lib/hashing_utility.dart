@@ -7,58 +7,53 @@ import 'package:pointycastle/macs/hmac.dart';
 import 'package:pointycastle/pointycastle.dart';
 
 class HashingUtility {
-  static const int PBKDF2_ITERATIONS = 1000;
+  static const int PBKDF2_ITERATIONS = 100000;
   static const int SALT_BYTES = 16;
   static const int HASH_BYTES = 32;
 
   HashingUtility._(); // Приватный конструктор
 
+  /// Генерирует соль в виде Uint8List
+  static Uint8List generateSalt() {
+    final random = Random.secure();
+    final salt = Uint8List(SALT_BYTES);
+    for (int i = 0; i < salt.length; i++) {
+      salt[i] = random.nextInt(256);
+    }
+    return salt;
+  }
 
-  // Асинхронная функция для хэширования пароля
-  static Future<Map<String, String>> hashPassword(String password) async {
+  /// Хэширует пароль и возвращает хэш и соль
+  static Future<Map<String, Uint8List>> hashPassword(String password) async {
     final salt = generateSalt();
-    final hash = await generatePBKDF2Hash(password, salt);
+    final hash = await _generatePBKDF2Hash(password, salt);
     return {'salt': salt, 'hash': hash};
   }
 
-
-  // Генерация соли
-  static String generateSalt() {
-    final random = Random.secure();
-    final saltBytes = Uint8List(SALT_BYTES);
-    for (var i = 0; i < saltBytes.length; i++) {
-      saltBytes[i] = random.nextInt(256);
-    }
-    return base64.encode(saltBytes);
-  }
-
-
-  // Асинхронная функция для генерации хэша PBKDF2
-  static Future<String> generatePBKDF2Hash(String password, String salt) async {
-    final params = Pbkdf2Parameters(base64.decode(salt), PBKDF2_ITERATIONS, HASH_BYTES);
+  /// Генерация PBKDF2-хэша
+  static Future<Uint8List> _generatePBKDF2Hash(String password, Uint8List salt) async {
     final pbkdf2 = PBKDF2KeyDerivator(HMac(SHA256Digest(), 64));
+    final params = Pbkdf2Parameters(salt, PBKDF2_ITERATIONS, HASH_BYTES);
     pbkdf2.init(params);
 
-    final passwordBytes = utf8.encode(password);
-    final key = pbkdf2.process(Uint8List.fromList(passwordBytes));
-    return base64.encode(key);
+    final passwordBytes = Uint8List.fromList(utf8.encode(password));
+    return pbkdf2.process(passwordBytes);
   }
 
+  /// Проверка пароля: сравнение хэшей
+  static Future<bool> verifyPassword(String password, Uint8List salt, Uint8List expectedHash) async {
+    final actualHash = await _generatePBKDF2Hash(password, salt);
+    if (actualHash.length != expectedHash.length) return false;
 
-  // Асинхронная проверка пароля
-  static Future<bool> verifyPassword(String password, String salt, String hash) async {
-    final generatedHash = await generatePBKDF2Hash(password, salt);
-    return hash == generatedHash;
+    // Защита от timing attacks
+    int diff = 0;
+    for (int i = 0; i < actualHash.length; i++) {
+      diff |= actualHash[i] ^ expectedHash[i];
+    }
+    return diff == 0;
   }
 
-
-  // static String generatePBKDF2HashSync(String password, String salt) {
-  //   final params = Pbkdf2Parameters(base64.decode(salt), PBKDF2_ITERATIONS, HASH_BYTES);
-  //   final pbkdf2 = PBKDF2KeyDerivator(HMac(SHA256Digest(), 64));
-  //   pbkdf2.init(params);
-  //
-  //   final passwordBytes = utf8.encode(password);
-  //   final key = pbkdf2.process(Uint8List.fromList(passwordBytes));
-  //   return base64.encode(key);
-  // }
+  /// Утилиты для конвертации
+  static String toBase64(Uint8List data) => base64.encode(data);
+  static Uint8List fromBase64(String encoded) => base64.decode(encoded);
 }
