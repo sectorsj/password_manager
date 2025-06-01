@@ -3,8 +3,8 @@ import '../models/website.dart';
 import 'base_service.dart';
 
 class WebsiteService extends BaseService {
-  Future<List<Website>> getWebsitesByAccount(int accountId) async {
-    final jsonData = await get('/websites/$accountId');
+  Future<List<Website>> getWebsitesByUser(int userId) async {
+    final jsonData = await get('/websites?user_id=$userId');
     return (jsonData as List).map((e) => Website.fromJson(e)).toList();
   }
 

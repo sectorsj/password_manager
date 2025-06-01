@@ -13,6 +13,8 @@ class Website {
   final int categoryId;
   final String? websiteEmail;
   final String websiteUrl;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   Website({
     required this.id,
@@ -25,6 +27,8 @@ class Website {
     required this.categoryId,
     this.websiteEmail,
     required this.websiteUrl,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory Website.fromJson(Map<String, dynamic> json) => Website(
@@ -38,6 +42,8 @@ class Website {
     categoryId: json['category_id'],
     websiteEmail: json['website_email'],
     websiteUrl: json['website_url'],
+    createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+    updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -51,5 +57,7 @@ class Website {
     'category_id': categoryId,
     'website_email': websiteEmail,
     'website_url': websiteUrl,
+    'created_at': createdAt?.toIso8601String(),
+    'updated_at': updatedAt?.toIso8601String(),
   };
 }

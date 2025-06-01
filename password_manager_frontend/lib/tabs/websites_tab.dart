@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';  // Для копирования пароля
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:password_manager_frontend/models/website.dart';
 import 'package:password_manager_frontend/services/website_service.dart';
+import 'package:password_manager_frontend/services/auth_service.dart';
 
 class WebsitesTab extends StatefulWidget {
   const WebsitesTab({Key? key}) : super(key: key);
@@ -11,8 +15,8 @@ class WebsitesTab extends StatefulWidget {
 
 class _WebsitesTabState extends State<WebsitesTab> {
   final WebsiteService websiteService = WebsiteService();
-  List<dynamic> websites = [];
-  bool _showPassword = false;
+  List<Website> _websites = [];
+  Map<int, bool> _showPasswordMap = {}; // состояние отображения пароля
 
   @override
   void initState() {
@@ -21,11 +25,20 @@ class _WebsitesTabState extends State<WebsitesTab> {
   }
 
   Future<void> _loadWebsites() async {
-    List<dynamic> result = await websiteService.getWebsitesByAccount(
-        1); // Пример ID аккаунта
-    setState(() {
-      websites = result;
-    });
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final userId = authService.userId;
+
+    try {
+      final websites = await websiteService.getWebsitesByUser(userId);
+      setState(() {
+        _websites = websites;
+      });
+    } catch (e) {
+      print('Ошибка при загрузке сайтов: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось загрузить сайты')),
+      );
+    }
   }
 
   @override
@@ -41,40 +54,38 @@ class _WebsitesTabState extends State<WebsitesTab> {
             DataColumn(label: Text('№')),
             DataColumn(label: Text('Название сайта')),
             DataColumn(label: Text('URL')),
-            DataColumn(label: Text('Имя пользователя')),
+            DataColumn(label: Text('Логин')),
             DataColumn(label: Text('Email')),
             DataColumn(label: Text('Пароль')),
           ],
-          rows: websites
-              .asMap()
-              .entries
-              .map((entry) {
-            int index = entry.key + 1;
-            var website = entry.value;
+          rows: _websites.asMap().entries.map((entry) {
+            final index = entry.key;
+            final website = entry.value;
+            final showPassword = _showPasswordMap[index] ?? false;
+            final passwordStr = utf8.decode(website.passwordHash);
 
             return DataRow(
               cells: [
-                DataCell(Text(index.toString())),
-                DataCell(Text(website[1])), // website_name
-                DataCell(Text(website[2])), // url
-                DataCell(Text(website[3])), // login
-                DataCell(Text(website[4])), // email
+                DataCell(Text('${index + 1}')),
+                DataCell(Text(website.websiteName)),
+                DataCell(Text(website.websiteUrl)),
+                DataCell(Text(website.websiteLogin)),
+                DataCell(Text(website.websiteEmail ?? '')),
                 DataCell(Row(
                   children: [
-                    Text(_showPassword ? website[5] : '****'), // пароль
+                    Text(showPassword ? passwordStr : '****'),
                     IconButton(
-                      icon: Icon(_showPassword ? Icons.visibility_off : Icons
-                          .visibility),
+                      icon: Icon(showPassword ? Icons.visibility_off : Icons.visibility),
                       onPressed: () {
                         setState(() {
-                          _showPassword = !_showPassword;
+                          _showPasswordMap[index] = !showPassword;
                         });
                       },
                     ),
                     IconButton(
                       icon: const Icon(Icons.copy),
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: website[5]));
+                        Clipboard.setData(ClipboardData(text: passwordStr));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Пароль скопирован')),
                         );
