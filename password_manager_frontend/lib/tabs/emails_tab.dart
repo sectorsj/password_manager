@@ -28,11 +28,20 @@ class _EmailsTabState extends State<EmailsTab> {
   }
 
   Future<void> _loadEmails() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    int userId = authService.userId;
 
-    List<Email> emails = await emailService.getEmails(1);
-    setState(() {
-      _emails = emails;
-    });
+    try {
+      List<Email> emails = await emailService.getEmails(userId);
+      setState(() {
+        _emails = emails;
+      });
+    } catch (e) {
+      print('Ошибка при загрузке email-ов: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось загрузить email-ы')),
+      );
+    }
   }
 
   void _showEmailDetails(BuildContext context, Email email) {

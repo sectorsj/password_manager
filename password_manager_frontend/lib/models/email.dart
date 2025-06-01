@@ -9,6 +9,8 @@ class Email {
   final int accountId;
   final int? categoryId;
   final int? userId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   Email({
     required this.id,
@@ -18,7 +20,9 @@ class Email {
     this.salt,
     required this.accountId,
     this.categoryId,
-    this.userId
+    this.userId,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory Email.fromJson(Map<String, dynamic> json) => Email(
@@ -29,7 +33,9 @@ class Email {
     salt: json ['salt'] != null ? Uint8List.fromList(List<int>.from(json['salt'])) : null,
     accountId: json ['account_id'],
     categoryId: json ['category_id'],
-    userId: json ['user_id']
+    userId: json ['user_id'],
+    createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+    updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -41,5 +47,7 @@ class Email {
     'account_id': accountId,
     'category_id': categoryId,
     'user_id': userId,
+    'created_at': createdAt?.toIso8601String(),
+    'updated_at': updatedAt?.toIso8601String(),
   };
 }

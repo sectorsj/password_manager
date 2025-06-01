@@ -315,23 +315,26 @@ void main() async {
     try {
       final result = await connection.execute(
         Sql.named('''
-        SELECT id, user_id, email_address, provider, created_at, updated_at
+        SELECT id, email_address, email_description, password_hash, salt, account_id, category_id, user_id, created_at, updated_at
         FROM emails
         WHERE user_id = @userId
-        ORDER BY created_at DESC
       '''),
         parameters: {'userId': userId},
       );
 
       final emails = result.map((row) {
-        final r = row.toColumnMap();
+        final raw = row.toColumnMap();
         return {
-          'id': r['id'],
-          'user_id': r['user_id'],
-          'email_address': r['email_address'],
-          'provider': r['provider'],
-          'created_at': (r['created_at'] as DateTime?)?.toIso8601String(),
-          'updated_at': (r['updated_at'] as DateTime?)?.toIso8601String(),
+          'id': raw['id'],
+          'email_address': raw['email_address'],
+          'email_description': raw['email_description'],
+          'password_hash': raw['password_hash'],
+          'salt': raw['salt'],
+          'account_id': raw['account_id'],
+          'category_id': raw['category_id'],
+          'user_id': raw['user_id'],
+          'created_at': (raw['created_at'] as DateTime?)?.toIso8601String(),
+          'updated_at': (raw['updated_at'] as DateTime?)?.toIso8601String(),
         };
       }).toList();
 

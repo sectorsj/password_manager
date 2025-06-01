@@ -5,8 +5,8 @@ import 'package:password_manager_frontend/services/base_service.dart';
 class EmailService extends BaseService {
 
   // Получить все Email для аккаунта
-  Future<List<Email>> getEmails(int accountId) async {
-    final jsonData = await get('/emails/$accountId');
+  Future<List<Email>> getEmails(int userId) async {
+    final jsonData = await get('/emails?user_id=$userId');
       return (jsonData as List).map((item) => Email.fromJson(item)).toList();
   }
 
