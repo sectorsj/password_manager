@@ -155,4 +155,5 @@ analysis_options.yaml
 common/utility/generated
 common/utility/analysis_options.yaml
 password_manager_frontend/analysis_options.yaml
+.swift
 
