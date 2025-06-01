@@ -11,6 +11,8 @@ class NetworkConnection {
   final int accountId;
   final int categoryId;
   final String? networkConnectionDescription;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   NetworkConnection({
     required this.id,
@@ -22,7 +24,9 @@ class NetworkConnection {
     required this.salt,
     required this.accountId,
     required this.categoryId,
-    this.networkConnectionDescription
+    this.networkConnectionDescription,
+    this.createdAt,
+    this.updatedAt,
   });
 
   factory NetworkConnection.fromJson(Map<String, dynamic> json) => NetworkConnection(
@@ -36,6 +40,8 @@ class NetworkConnection {
     accountId: json['account_id'],
     categoryId: json['category_id'],
     networkConnectionDescription: json['network_connection_description'],
+    createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+    updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -48,6 +54,8 @@ class NetworkConnection {
     'salt': salt,
     'account_id': accountId,
     'category_id': categoryId,
-    'network_connection_description': networkConnectionDescription
+    'network_connection_description': networkConnectionDescription,
+    'created_at': createdAt?.toIso8601String(),
+    'updated_at': updatedAt?.toIso8601String(),
   };
 }

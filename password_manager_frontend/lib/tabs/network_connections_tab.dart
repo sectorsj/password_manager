@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';  // Для копирования пароля
 import 'package:password_manager_frontend/models/network_connection.dart';
+import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/services/network_connection_service.dart';
+import 'package:provider/provider.dart';
 
 class NetworkConnectionsTab extends StatefulWidget {
   const NetworkConnectionsTab({Key? key}) : super(key: key);
@@ -24,10 +26,20 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
   }
 
   Future<void> _loadNetworkConnections() async {
-    List<NetworkConnection> connections = await networkConnectionServiceService.getNetworkConnectionsByAccount(1);  // Пример ID аккаунта
-    setState(() {
-      _connections = connections;
-    });
+    final authService = Provider.of<AuthService>(context, listen: false);
+    int userId = authService.userId;
+
+    try {
+      final result = await networkConnectionServiceService.getNetworkConnectionsByUser(userId);
+      setState(() {
+        _connections = result;
+      });
+    } catch (e) {
+      print('Ошибка при загрузке сетевых подключений: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Не удалось загрузить сетевые подключения')),
+      );
+    }
   }
 
   @override
