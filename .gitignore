@@ -139,3 +139,9 @@ lib/generated_plugin_registrant.dart
 !pubspec.yaml
 !analysis_options.yaml
 !.metadata
+
+
+/android/.gitignore
+/common/utility/.gitignore
+/ios/.gitignore
+/linux/.gitignore
