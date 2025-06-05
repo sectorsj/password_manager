@@ -1,6 +1,5 @@
 import 'package:password_manager_frontend/services/base_service.dart';
 
-
 /// LoginService
 /// Метод login():
 /// - Делает POST на /login с логином и паролем.

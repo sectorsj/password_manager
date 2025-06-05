@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/utils/ui_routes.dart';
 import 'package:provider/provider.dart';
 import 'package:password_manager_frontend/pages/splash_screen_page.dart';
 import 'package:password_manager_frontend/pages/login_page.dart';
@@ -28,11 +29,11 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      initialRoute: '/splash',
+      initialRoute: UiRoutes.splash,
       routes: {
-        '/splash': (_) => const SplashScreenPage(),
-        '/login': (_) => const LoginPage(),
-        '/register': (_) => const RegistrationPage(),
+        UiRoutes.splash: (_) => const SplashScreenPage(),
+        UiRoutes.login: (_) => const LoginPage(),
+        UiRoutes.register: (_) => const RegistrationPage(),
       },
     );
   }

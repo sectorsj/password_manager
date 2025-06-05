@@ -5,6 +5,7 @@ import 'package:password_manager_frontend/services/account_service.dart';
 import 'package:password_manager_frontend/models/account.dart'; // Убедись, что это путь к модели
 import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/services/user_service.dart';
+import 'package:password_manager_frontend/utils/ui_routes.dart';
 import 'package:provider/provider.dart';
 
 class LoginPage extends StatefulWidget {
@@ -37,79 +38,89 @@ class _LoginPageState extends State<LoginPage> {
                 controller: _accountLoginController,
                 decoration: const InputDecoration(labelText: 'Логин аккаунта'),
                 validator: (value) =>
-                value == null || value.isEmpty ? 'Введите логин' : null,
+                    value == null || value.isEmpty ? 'Введите логин' : null,
               ),
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Пароль'),
                 obscureText: true,
                 validator: (value) =>
-                value == null || value.isEmpty ? 'Введите пароль' : null,
+                    value == null || value.isEmpty ? 'Введите пароль' : null,
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _isLoading
                     ? null
                     : () async {
-                  if (_formKey.currentState!.validate()) {
-                    setState(() => _isLoading = true);
-                    try {
-                      final result = await _loginService.login(
-                        accountLogin:
-                        _accountLoginController.text.trim(),
-                        password: _passwordController.text.trim(),
-                      );
-                      print('DEBUG result: $result');
+                        if (_formKey.currentState!.validate()) {
+                          setState(() => _isLoading = true);
+                          try {
+                            final result = await _loginService.login(
+                              accountLogin: _accountLoginController.text.trim(),
+                              password: _passwordController.text.trim(),
+                            );
+                            print('DEBUG result: $result');
 
-                      final rawAccountId = result['account_id'];
-                      final rawUserId = result['user_id'];
+                            final rawAccountId = result['account_id'];
+                            final rawUserId = result['user_id'];
 
-                      if (rawAccountId == null || rawUserId == null) {
-                        throw Exception('account_id или user_id отсутствуют в ответе сервера');
-                      }
+                            if (rawAccountId == null || rawUserId == null) {
+                              throw Exception(
+                                  'account_id или user_id отсутствуют в ответе сервера');
+                            }
 
-                      final accountId = rawAccountId is int ? rawAccountId : int.tryParse(rawAccountId.toString());
-                      final userId = rawUserId is int ? rawUserId : int.tryParse(rawUserId.toString());
+                            final accountId = rawAccountId is int
+                                ? rawAccountId
+                                : int.tryParse(rawAccountId.toString());
+                            final userId = rawUserId is int
+                                ? rawUserId
+                                : int.tryParse(rawUserId.toString());
 
-                      if (accountId == null || userId == null) {
-                        throw Exception('account_id или user_id не удалось преобразовать в int');
-                      }
+                            if (accountId == null || userId == null) {
+                              throw Exception(
+                                  'account_id или user_id не удалось преобразовать в int');
+                            }
 
-                      await authService.setSession(
-                        accountId: accountId,
-                        userId: userId,
-                      );
+                            await authService.setSession(
+                              accountId: accountId,
+                              userId: userId,
+                            );
 
-                      final account = await AccountService()
-                          .fetchAccountById(accountId);
-                      final user = await UserService().fetchUserById(userId);
+                            final account = await AccountService()
+                                .fetchAccountById(accountId);
+                            final user =
+                                await UserService().fetchUserById(userId);
 
-                      print("DEBUG Account (после fetch): ${account.toJson()}");
+                            print(
+                                "DEBUG Account (после fetch): ${account.toJson()}");
 
-                      if (!mounted) return;
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              HomePage(account: account, user: user,),
-                        ),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Ошибка входа: $e')),
-                      );
-                    } finally {
-                      setState(() => _isLoading = false);
-                    }
-                  }
-                },
+                            if (!mounted) return;
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => HomePage(
+                                  account: account,
+                                  user: user,
+                                ),
+                              ),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Ошибка входа: $e')),
+                            );
+                          } finally {
+                            setState(() => _isLoading = false);
+                          }
+                        }
+                      },
                 child: _isLoading
                     ? const CircularProgressIndicator()
                     : const Text('Войти'),
               ),
               const SizedBox(height: 10),
               TextButton(
-                onPressed: () => Navigator.pushNamed(context, '/register'),
+                onPressed: () =>
+                    Navigator.pushNamed(context, UiRoutes.register),
                 child: const Text('Нет аккаунта? Зарегистрироваться'),
               ),
             ],

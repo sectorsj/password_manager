@@ -3,13 +3,11 @@ import 'dart:convert';
 
 import 'package:password_manager_frontend/services/base_service.dart';
 
-
 /// RegistrationService
 // Метод register():
 // - Делает POST на /register.
 // - Получает accountId и userId из ответа.
 class RegistrationService extends BaseService {
-
   Future<Map<String, dynamic>> register({
     required String accountLogin,
     required String userName,
@@ -19,7 +17,7 @@ class RegistrationService extends BaseService {
     String? userPhone,
     String? userDescription,
   }) async {
-    final response = await post('/register', {
+    final response = await post('/auth/register', {
       'account_login': accountLogin,
       'user_name': userName,
       'email_address': emailAddress,

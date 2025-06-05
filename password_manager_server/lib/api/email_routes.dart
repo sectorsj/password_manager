@@ -12,7 +12,7 @@ class EmailRoutes {
   Router get router {
     final router = Router();
 
-    router.get('', _getEmailsByUserId);
+    router.get('/', _getEmailsByUserId);
     return router;
   }
 

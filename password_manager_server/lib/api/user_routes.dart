@@ -11,7 +11,7 @@ class UserRoutes {
 
   Router get router {
     final router = Router();
-    router.get('<id>', _getUserById);
+    router.get('/<id>', _getUserById);
     return router;
   }
 

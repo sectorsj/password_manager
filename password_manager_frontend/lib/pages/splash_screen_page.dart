@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 
+import '../utils/ui_routes.dart';
+
 class SplashScreenPage extends StatefulWidget {
   const SplashScreenPage({Key? key}) : super(key: key);
 
@@ -12,8 +14,8 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), (){
-      Navigator.pushReplacementNamed(context,'/login');
+    Timer(const Duration(seconds: 3), () {
+      Navigator.pushReplacementNamed(context, UiRoutes.login);
     });
   }
 

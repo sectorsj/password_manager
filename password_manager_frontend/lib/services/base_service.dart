@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:password_manager_frontend/config.dart';
+import 'package:password_manager_frontend/utils/config.dart';
 
 class BaseService {
   final String _baseUrl = baseUrl;
@@ -13,7 +13,7 @@ class BaseService {
     return jsonDecode(response.body);
   }
 
-  Future<dynamic> post (String endpoint, Map<String, dynamic> body) async {
+  Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
     final response = await http.post(
       buildUri(endpoint),
       headers: {'Content-Type': 'application/json'},
