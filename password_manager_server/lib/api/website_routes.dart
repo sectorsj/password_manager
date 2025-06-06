@@ -69,4 +69,39 @@ class WebsiteRoutes {
       );
     }
   }
+
+  // --- routes/website_routes.dart ---
+  // router.get('/<id>/password', _getDecryptedWebsitePasswordById);
+  Future<Response> _getDecryptedWebsitePasswordById(
+      Request request, String id) async {
+    final websiteId = int.tryParse(id);
+
+    if (websiteId == null) {
+      return Response.badRequest(
+          body: jsonEncode({'error': 'Invalid website ID'}),
+          headers: {'Content-Type': 'application/json'});
+    }
+    try {
+      final result = await connection.execute(
+        Sql.named('''
+            SELECT decrypted_password
+            FROM websites
+            WHERE id = @id
+            '''),
+        parameters: {'id': websiteId},
+      );
+      if (result.isEmpty) {
+        return Response.notFound(jsonEncode({'error': 'Website not found'}),
+            headers: {'Content-Type': 'application/json'});
+      }
+      final password = result.first.toColumnMap()['decrypted_password'];
+
+      return Response.ok(jsonEncode({'decrypted_password': password}),
+          headers: {'Content-Type': 'application/json'});
+    } catch (e) {
+      return Response.internalServerError(
+          body: jsonEncode({'error': 'Server error'}),
+          headers: {'Content-Type': 'application/json'});
+    }
+  }
 }

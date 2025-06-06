@@ -9,12 +9,23 @@ class WebsiteService extends BaseService {
   }
 
   Future<String> addWebsite(Website website) async {
-    final jsonBody = website.toJson()..updateAll((k, v) {
-      if (v is Uint8List) return v.toList();
-      return v;
-    });
+    final jsonBody = website.toJson()
+      ..updateAll((k, v) {
+        if (v is Uint8List) return v.toList();
+        return v;
+      });
 
     await post('/websites/add', jsonBody);
     return 'Вебсайт (Website) добавлен успешно';
+  }
+
+  // --- services/website_service.dart ---
+  Future<String> getDecryptedPassword(int id) async {
+    final response = await get('/websites/$id/password');
+    if (response is Map && response.containsKey('decrypted_password')) {
+      return response['decrypted_password'];
+    } else {
+      throw Exception('Ошибка при получении расшифрованного пароля');
+    }
   }
 }
