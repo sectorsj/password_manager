@@ -3,7 +3,6 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_cors_headers/shelf_cors_headers.dart';
 
-import 'api/auth_routes.dart';
 import 'api/login_route.dart';
 import 'api/register_route.dart';
 import 'api/account_routes.dart';
