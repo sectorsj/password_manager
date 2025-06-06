@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:encrypt/encrypt.dart';
 import 'package:dotenv/dotenv.dart';
 
 class EncryptionUtility {
   static const int _ivLength = 12;
-  final encrypt.Key _key;
+  final Key _key;
 
   EncryptionUtility(DotEnv env) : _key = _loadKey(env);
 
@@ -15,7 +15,7 @@ class EncryptionUtility {
   }
 
   /// Получаем ключ из .env
-  static encrypt.Key _loadKey(DotEnv env) {
+  static Key _loadKey(DotEnv env) {
     final keyBase64 = env['APP_AES_KEY'];
     if (keyBase64 == null || keyBase64.isEmpty) {
       throw Exception('APP_AES_KEY не найден в .env');
@@ -26,7 +26,7 @@ class EncryptionUtility {
       if (keyBytes.length != 32) {
         throw Exception('APP_AES_KEY должен быть длиной 256 бит (32 байта)');
       }
-      return encrypt.Key(keyBytes);
+      return Key(keyBytes);
     } catch (e) {
       throw Exception('Ошибка при декодировании APP_AES_KEY: $e');
     }
@@ -34,9 +34,9 @@ class EncryptionUtility {
 
   /// Шифрует строку и возвращает base64(IV + encrypted)
   String encryptText(String plainText) {
-    final iv = encrypt.IV.fromSecureRandom(_ivLength);
-    final encrypter = encrypt.Encrypter(
-      encrypt.AES(_key, mode: encrypt.AESMode.gcm),
+    final iv = IV.fromSecureRandom(_ivLength);
+    final encrypter = Encrypter(
+      AES(_key, mode: AESMode.gcm),
     );
 
     final encrypted = encrypter.encrypt(plainText, iv: iv);
@@ -56,13 +56,13 @@ class EncryptionUtility {
       throw ArgumentError('Недопустимая длина зашифрованных данных');
     }
 
-    final iv = encrypt.IV(combined.sublist(0, _ivLength));
+    final iv = IV(combined.sublist(0, _ivLength));
     final encryptedBytes = combined.sublist(_ivLength);
 
-    final encrypter = encrypt.Encrypter(
-      encrypt.AES(_key, mode: encrypt.AESMode.gcm),
+    final encrypter = Encrypter(
+      AES(_key, mode: AESMode.gcm),
     );
 
-    return encrypter.decrypt(encrypt.Encrypted(encryptedBytes), iv: iv);
+    return encrypter.decrypt(Encrypted(encryptedBytes), iv: iv);
   }
 }
