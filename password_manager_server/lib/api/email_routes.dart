@@ -32,7 +32,7 @@ class EmailRoutes {
     try {
       final result = await connection.execute(
         Sql.named('''
-                        SELECT id, email_address, email_description, password_hash, salt, account_id, category_id, user_id, created_at, updated_at
+                        SELECT id, email_address, email_description, decrypted_password, account_id, category_id, user_id, created_at, updated_at
                         FROM emails
                         WHERE user_id = @userId
                         '''),
@@ -45,8 +45,7 @@ class EmailRoutes {
           'id': raw['id'],
           'email_address': raw['email_address'],
           'email_description': raw['email_description'],
-          'password_hash': raw['password_hash'],
-          'salt': raw['salt'],
+          'decrypted_password': raw['decrypted_password'],
           'account_id': raw['account_id'],
           'category_id': raw['category_id'],
           'user_id': raw['user_id'],
@@ -64,6 +63,48 @@ class EmailRoutes {
       return Response.internalServerError(
         body: jsonEncode(
             {'error': 'Ошибка сервера при получении email-аккаунтов'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  Future<Response> _getDecryptedPasswordById(Request request, String id) async {
+    final emailId = int.tryParse(id);
+
+    if (emailId == null) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Invalid email ID'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    try {
+      final result = await connection.execute(
+        Sql.named('''
+        SELECT decrypted_password
+        FROM emails
+        WHERE id = @id
+      '''),
+        parameters: {'id': emailId},
+      );
+
+      if (result.isEmpty) {
+        return Response.notFound(
+          jsonEncode({'error': 'Email not found'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      final password = result.first.toColumnMap()['decrypted_password'];
+
+      return Response.ok(
+        jsonEncode({'decrypted_password': password}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e) {
+      print('Ошибка при получении расшифрованного пароля: $e');
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Server error'}),
         headers: {'Content-Type': 'application/json'},
       );
     }

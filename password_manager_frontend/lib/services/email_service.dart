@@ -3,11 +3,10 @@ import 'package:password_manager_frontend/models/email.dart';
 import 'package:password_manager_frontend/services/base_service.dart';
 
 class EmailService extends BaseService {
-
   // Получить все Email для аккаунта
   Future<List<Email>> getEmails(int userId) async {
     final jsonData = await get('/emails?user_id=$userId');
-      return (jsonData as List).map((item) => Email.fromJson(item)).toList();
+    return (jsonData as List).map((item) => Email.fromJson(item)).toList();
   }
 
   // Добавить Email
@@ -19,5 +18,14 @@ class EmailService extends BaseService {
       });
     await post('/emails/add', jsonBody);
     return 'Почта (Email) добавлена успешно';
+  }
+
+  Future<String> getDecryptedPassword(int id) async {
+    final response = await get('/emails/$id/password');
+    if (response is Map && response.containsKey('decrypted_password')) {
+      return response['decrypted_password'];
+    } else {
+      throw Exception('Ошибка при получении расшифрованного пароля');
+    }
   }
 }
