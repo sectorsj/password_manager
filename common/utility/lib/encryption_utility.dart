@@ -5,7 +5,6 @@ import 'package:dotenv/dotenv.dart';
 
 class EncryptionUtility {
   static const int _ivLength = 12;
-
   final encrypt.Key _key;
 
   EncryptionUtility(DotEnv env) : _key = _loadKey(env);
@@ -39,7 +38,8 @@ class EncryptionUtility {
 
     final combined = Uint8List(_ivLength + encrypted.bytes.length);
     combined.setRange(0, _ivLength, iv.bytes);
-    combined.setRange(_ivLength, combined.length, encrypted.bytes);
+    combined.setRange(
+        _ivLength, _ivLength + encrypted.bytes.length, encrypted.bytes);
 
     return base64Encode(combined);
   }
