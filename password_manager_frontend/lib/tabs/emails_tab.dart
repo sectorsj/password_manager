@@ -5,7 +5,7 @@ import 'package:flutter/services.dart'; // Для копирования пар�
 import 'package:password_manager_frontend/models/email.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/services/email_service.dart';
-import 'package:password_manager_frontend/pages/email_form_page.dart';
+import 'package:password_manager_frontend/widgets/add_email_form_widget.dart';
 import 'package:provider/provider.dart';
 
 class EmailsTab extends StatefulWidget {

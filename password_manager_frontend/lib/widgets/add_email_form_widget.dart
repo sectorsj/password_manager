@@ -1,8 +1,8 @@
-import 'dart:typed_data';
+// dart
 import 'package:flutter/material.dart';
+import 'package:hashing_utility_package/encryption_utility.dart';
 import 'package:password_manager_frontend/models/email.dart';
 import 'package:password_manager_frontend/services/email_service.dart';
-import 'package:hashing_utility_package/hashing_utility.dart';
 
 class EmailFormPage extends StatefulWidget {
   final int accountId;
@@ -27,50 +27,47 @@ class _EmailFormPageState extends State<EmailFormPage> {
   final _descriptionController = TextEditingController();
 
   final EmailService _emailService = EmailService();
+  final EncryptionUtility _encryptionUtility = EncryptionUtility.fromEnv();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Добавить почту'),
-      ),
+      appBar: AppBar(title: const Text('Добавить почту')),
       body: Form(
         key: _formKey,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: 'Email'),
                 validator: (value) =>
-                value == null || value.isEmpty ? 'Введите email' : null,
+                    value == null || value.isEmpty ? 'Введите email' : null,
               ),
               TextFormField(
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Пароль'),
                 obscureText: true,
                 validator: (value) =>
-                value == null || value.isEmpty ? 'Введите пароль' : null,
+                    value == null || value.isEmpty ? 'Введите пароль' : null,
               ),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Описание (необязательно)'),
+                decoration: const InputDecoration(
+                    labelText: 'Описание (необязательно)'),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
                   if (_formKey.currentState!.validate()) {
-                    final hashed = await HashingUtility.hashPassword(
-                      _passwordController.text,
-                    );
+                    final encryptedPassword = _encryptionUtility
+                        .encryptText(_passwordController.text);
 
                     final email = Email(
                       id: 0,
                       emailAddress: _emailController.text,
-                      passwordHash: hashed['hash']!,
-                      salt: hashed['salt']!,
+                      encryptedPassword: encryptedPassword,
                       emailDescription: _descriptionController.text,
                       accountId: widget.accountId,
                       categoryId: widget.categoryId,
