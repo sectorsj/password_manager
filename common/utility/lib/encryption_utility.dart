@@ -9,6 +9,11 @@ class EncryptionUtility {
 
   EncryptionUtility(DotEnv env) : _key = _loadKey(env);
 
+  factory EncryptionUtility.fromEnv() {
+    final env = DotEnv()..load(); // Загружает .env автоматически
+    return EncryptionUtility(env);
+  }
+
   /// Получаем ключ из .env
   static encrypt.Key _loadKey(DotEnv env) {
     final keyBase64 = env['APP_AES_KEY'];
