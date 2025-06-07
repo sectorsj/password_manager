@@ -12,17 +12,15 @@ class RegistrationService extends BaseService {
     required String accountLogin,
     required String userName,
     required String emailAddress,
-    required Uint8List passwordHash,
-    required Uint8List salt,
+    required String password,
     String? userPhone,
     String? userDescription,
   }) async {
-    final response = await post('/auth/register', {
+    final response = await post('/register', {
       'account_login': accountLogin,
       'user_name': userName,
       'email_address': emailAddress,
-      'password_hash': base64Encode(passwordHash),
-      'salt': base64Encode(salt),
+      'password': password,
       if (userPhone != null) 'user_phone': userPhone,
       if (userDescription != null) 'user_description': userDescription,
     });

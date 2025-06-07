@@ -97,10 +97,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
                         if (_formKey.currentState!.validate()) {
                           setState(() => _isLoading = true);
                           try {
-                            final hashed = await HashingUtility.hashPassword(
-                              _passwordController.text,
-                            );
-
                             final result = await _registrationService.register(
                               accountLogin: _accountLoginController.text.trim(),
                               userName: _userNameController.text.trim(),
@@ -112,8 +108,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
                                   _descriptionController.text.trim().isEmpty
                                       ? null
                                       : _descriptionController.text.trim(),
-                              passwordHash: hashed['hash']!,
-                              salt: hashed['salt']!,
+                              password: _passwordController.text,
                             );
 
                             await authService.setSession(

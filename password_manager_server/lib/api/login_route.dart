@@ -26,17 +26,17 @@ class LoginRoute {
       final body = await request.readAsString();
       final data = jsonDecode(body);
 
-      final login = data['login'];
+      final accountLogin = data['account_login'];
       final password = data['password'];
 
-      if (login == null || password == null) {
+      if (accountLogin == null || password == null) {
         return Response.badRequest(
           body: jsonEncode({'error': 'Укажите логин и пароль'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
 
-      print('Попытка входа с логином: $login');
+      print('Попытка входа с логином: $accountLogin');
 
       // SQL запрос - добавляем получение user_id
       final result = await connection.execute(
@@ -48,16 +48,16 @@ class LoginRoute {
           u.id as user_id
         FROM accounts a
         LEFT JOIN users u ON a.id = u.account_id
-        WHERE a.account_login = @login
+        WHERE a.account_login = @accountLogin
       '''),
-        parameters: {'login': login},
+        parameters: {'accountLogin': accountLogin},
       );
 
       if (result.isEmpty) {
-        print('Пользователь с логином "$login" не найден в БД');
+        print('Пользователь с логином "$accountLogin" не найден в БД');
 
         // (ОТЛАДКА) Проверяем, какие логины есть в БД
-        // final allAccounts = await connection
+        // final allAccounts = await connectionть
         //     .execute('SELECT account_login FROM accounts LIMIT 10');
         // print('Существующие логины в БД:');
         // for (final account in allAccounts) {
@@ -71,31 +71,24 @@ class LoginRoute {
       }
 
       final row = result.first.toColumnMap();
-      final encryptedPassword = row['encrypted_password'] as String;
+      final encryptedStored = row['encrypted_password'] as String;
 
-      late String decryptedPassword;
+      final decryptedStored = encryption.decryptText(encryptedStored);
 
-      print('Найден пользователь с логином: $login');
+      // ЛОГИРУЕМ перед сравнением
+      print('Пароль, введённый пользователем: $password');
+      print('Зашифрованный пароль из БД:     $encryptedStored');
+      print('Расшифрованный введённый пароль: $decryptedStored');
 
-      try {
-        decryptedPassword = encryption.decryptText(encryptedPassword);
-      } catch (e) {
-        print('Ошибка расшифровки: $e');
-        return Response.internalServerError(
-          body: jsonEncode({'error': 'Ошибка при расшифровке пароля'}),
-          headers: {'Content-Type': 'application/json'},
-        );
-      }
-
-      if (decryptedPassword != password) {
-        print('Неверный пароль для логина: $login');
+      if (decryptedStored != password) {
+        print('Пароль не совпадает для логина:: $accountLogin');
         return Response.forbidden(
           jsonEncode({'error': 'Неверное имя пользователя или пароль'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
 
-      print('Вход выполнен: $login');
+      print('Вход выполнен: $accountLogin');
 
       // ИСПРАВЛЕННЫЙ ответ - добавляем userId с проверкой на null
       return Response.ok(

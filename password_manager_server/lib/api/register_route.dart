@@ -27,7 +27,7 @@ class RegisterRoute {
       final data = jsonDecode(body);
 
       final accountLogin = data['account_login'];
-      final emailAddress = data['account_email'];
+      final emailAddress = data['email_address'];
       final password = data['password'];
       final userName = data['user_name'];
       final userPhone = data['user_phone'];
@@ -49,7 +49,7 @@ class RegisterRoute {
             SELECT * FROM create_account_with_user_and_email(
             @accountLogin,
             @emailAddress,
-            @encryptedPassword,
+            @password,
             @userName,
             @userPhone,
             @userDescription)
@@ -57,7 +57,7 @@ class RegisterRoute {
         parameters: {
           'accountLogin': accountLogin,
           'emailAddress': emailAddress,
-          'encryptedPassword': encryptedPassword,
+          'password': encryptedPassword,
           'userName': userName,
           'userPhone': userPhone,
           'userDescription': userDescription,
