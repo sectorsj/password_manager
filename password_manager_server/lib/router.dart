@@ -18,7 +18,7 @@ Handler buildHandler(Connection connection, DotEnv env) {
     ..mount('/register', RegisterRoute(connection, env).router)
     ..mount('/accounts', AccountRoutes(connection).router)
     ..mount('/users', UserRoutes(connection).router)
-    ..mount('/emails', EmailRoutes(connection).router)
+    ..mount('/emails', EmailRoutes(connection, env).router)
     ..mount('/websites', WebsiteRoutes(connection).router)
     ..mount('/network-connections', NetworkConnectionRoutes(connection).router);
 

@@ -1,18 +1,24 @@
 import 'dart:convert';
 
+import 'package:dotenv/dotenv.dart';
+import 'package:hashing_utility_package/encryption_utility.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:postgres/postgres.dart';
 
 class EmailRoutes {
   final Connection connection;
+  final EncryptionUtility encryption;
 
-  EmailRoutes(this.connection);
+  EmailRoutes(this.connection, DotEnv env)
+      : encryption = EncryptionUtility(env);
 
   Router get router {
     final router = Router();
 
     router.get('/', _getEmailsByUserId);
+    router.get('/<id>/password', _getDecryptedPasswordById);
+
     return router;
   }
 
@@ -24,7 +30,7 @@ class EmailRoutes {
 
     if (userId == null) {
       return Response.badRequest(
-        body: jsonEncode({'error': 'Missing or invalid user_id'}),
+        body: jsonEncode({'error': 'Отсутствует или неверный user_id'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
@@ -32,10 +38,10 @@ class EmailRoutes {
     try {
       final result = await connection.execute(
         Sql.named('''
-                        SELECT id, email_address, email_description, encrypted_password, account_id, category_id, user_id, created_at, updated_at
-                        FROM emails
-                        WHERE user_id = @userId
-                        '''),
+          SELECT id, email_address, email_description, encrypted_password, account_id, category_id, user_id, created_at, updated_at
+          FROM emails
+          WHERE user_id = @userId
+        '''),
         parameters: {'userId': userId},
       );
 
@@ -68,12 +74,12 @@ class EmailRoutes {
     }
   }
 
-  Future<Response> _getEncryptedPasswordById(Request request, String id) async {
+  Future<Response> _getDecryptedPasswordById(Request request, String id) async {
     final emailId = int.tryParse(id);
 
     if (emailId == null) {
       return Response.badRequest(
-        body: jsonEncode({'error': 'Invalid email ID'}),
+        body: jsonEncode({'error': 'Неверный email ID'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
@@ -81,30 +87,32 @@ class EmailRoutes {
     try {
       final result = await connection.execute(
         Sql.named('''
-        SELECT encrypted_password
-        FROM emails
-        WHERE id = @id
+          SELECT encrypted_password
+          FROM emails
+          WHERE id = @id
       '''),
         parameters: {'id': emailId},
       );
 
       if (result.isEmpty) {
         return Response.notFound(
-          jsonEncode({'error': 'Email not found'}),
+          jsonEncode({'error': 'Email не обнаружен'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
 
-      final password = result.first.toColumnMap()['encrypted_password'];
+      final encrypted =
+          result.first.toColumnMap()['encrypted_password'] as String;
+      final decrypted = encryption.decryptText(encrypted);
 
       return Response.ok(
-        jsonEncode({'encrypted_password': password}),
+        jsonEncode({'decrypted_password': decrypted}),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
       print('Ошибка при получении расшифрованного пароля: $e');
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Server error'}),
+        body: jsonEncode({'error': 'Ошибка сервера'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
