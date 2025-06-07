@@ -32,7 +32,7 @@ class EmailRoutes {
     try {
       final result = await connection.execute(
         Sql.named('''
-                        SELECT id, email_address, email_description, decrypted_password, account_id, category_id, user_id, created_at, updated_at
+                        SELECT id, email_address, email_description, encrypted_password, account_id, category_id, user_id, created_at, updated_at
                         FROM emails
                         WHERE user_id = @userId
                         '''),
@@ -45,7 +45,7 @@ class EmailRoutes {
           'id': raw['id'],
           'email_address': raw['email_address'],
           'email_description': raw['email_description'],
-          'decrypted_password': raw['decrypted_password'],
+          'encrypted_password': raw['encrypted_password'],
           'account_id': raw['account_id'],
           'category_id': raw['category_id'],
           'user_id': raw['user_id'],
@@ -68,7 +68,7 @@ class EmailRoutes {
     }
   }
 
-  Future<Response> _getDecryptedPasswordById(Request request, String id) async {
+  Future<Response> _getEncryptedPasswordById(Request request, String id) async {
     final emailId = int.tryParse(id);
 
     if (emailId == null) {
@@ -81,7 +81,7 @@ class EmailRoutes {
     try {
       final result = await connection.execute(
         Sql.named('''
-        SELECT decrypted_password
+        SELECT encrypted_password
         FROM emails
         WHERE id = @id
       '''),
@@ -95,10 +95,10 @@ class EmailRoutes {
         );
       }
 
-      final password = result.first.toColumnMap()['decrypted_password'];
+      final password = result.first.toColumnMap()['encrypted_password'];
 
       return Response.ok(
-        jsonEncode({'decrypted_password': password}),
+        jsonEncode({'encrypted_password': password}),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
