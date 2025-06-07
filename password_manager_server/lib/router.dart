@@ -1,3 +1,4 @@
+import 'package:dotenv/dotenv.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -11,10 +12,10 @@ import 'api/email_routes.dart';
 import 'api/website_routes.dart';
 import 'api/network_connection_routes.dart';
 
-Handler buildHandler(Connection connection) {
+Handler buildHandler(Connection connection, DotEnv env) {
   final router = Router()
-    ..mount('/login', LoginRoute(connection).router)
-    ..mount('/register', RegisterRoute(connection).router)
+    ..mount('/login', LoginRoute(connection, env).router)
+    ..mount('/register', RegisterRoute(connection, env).router)
     ..mount('/accounts', AccountRoutes(connection).router)
     ..mount('/users', UserRoutes(connection).router)
     ..mount('/emails', EmailRoutes(connection).router)

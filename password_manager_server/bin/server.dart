@@ -6,7 +6,7 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 void main() async {
   final dotenv = DotEnv()..load();
   final connection = await createConnection(dotenv);
-  final handler = buildHandler(connection);
+  final handler = buildHandler(connection, dotenv);
 
   final server = await shelf_io.serve(handler, 'localhost', 8080);
   print(
