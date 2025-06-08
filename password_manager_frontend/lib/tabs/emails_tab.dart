@@ -109,7 +109,7 @@ class _EmailsTabState extends State<EmailsTab> {
     await Navigator.push(
       context,
       MaterialPageRoute(
-          builder: (context) => EmailFormPage(
+          builder: (context) => AddEmailFormWidget(
               accountId: accountId, categoryId: categoryId, userId: userId)),
     );
     _loadEmails();

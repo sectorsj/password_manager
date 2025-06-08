@@ -4,12 +4,12 @@ import 'package:hashing_utility_package/encryption_utility.dart';
 import 'package:password_manager_frontend/models/email.dart';
 import 'package:password_manager_frontend/services/email_service.dart';
 
-class EmailFormPage extends StatefulWidget {
+class AddEmailFormWidget extends StatefulWidget {
   final int accountId;
   final int? categoryId;
   final int? userId;
 
-  const EmailFormPage({
+  const AddEmailFormWidget({
     Key? key,
     required this.accountId,
     this.categoryId,
@@ -17,10 +17,10 @@ class EmailFormPage extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _EmailFormPageState createState() => _EmailFormPageState();
+  _AddEmailFormWidgetState createState() => _AddEmailFormWidgetState();
 }
 
-class _EmailFormPageState extends State<EmailFormPage> {
+class _AddEmailFormWidgetState extends State<AddEmailFormWidget> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
