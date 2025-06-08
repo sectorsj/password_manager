@@ -10,8 +10,9 @@ import 'package:postgres/postgres.dart';
 class RegisterRoute {
   final Connection connection;
   final EncryptionUtility encryption;
+  final DotEnv env;
 
-  RegisterRoute(this.connection, DotEnv env)
+  RegisterRoute(this.connection, this.env)
       : encryption = EncryptionUtility(env);
 
   Router get router {
@@ -79,6 +80,7 @@ class RegisterRoute {
           'account_id': int.parse(row['account_id'].toString()),
           'user_id': int.parse(row['user_id'].toString()),
           'email_id': int.parse(row['email_id'].toString()),
+          'aes_key': env['APP_AES_KEY'],
         }),
         headers: {'Content-Type': 'application/json'},
       );

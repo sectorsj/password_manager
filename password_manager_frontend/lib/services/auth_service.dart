@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:hashing_utility_package/secure_storage_helper.dart';
 import 'package:password_manager_frontend/models/account.dart';
 import 'package:password_manager_frontend/models/user.dart';
 import 'package:password_manager_frontend/services/account_service.dart';
 import 'package:password_manager_frontend/services/user_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// AuthService
 ///  Хранит accountId и userId.
@@ -21,10 +23,13 @@ class AuthService extends ChangeNotifier {
   final UserService _userService = UserService();
 
   int get accountId => _accountId;
+
   int get userId => _userId;
+
   int get categoryId => _categoryId;
 
   Account? get account => _account;
+
   User? get user => _user;
 
   void setCategoryId(int id) {
@@ -32,10 +37,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setSession({
-    required int accountId,
-    required int userId
-  }) async {
+  Future<void> setSession({required int accountId, required int userId}) async {
     if (accountId == 0 || userId == 0) {
       print('ОШИБКА: accountId или userId равны 0');
       throw Exception('Неверные данные: accountId=$accountId, userId=$userId');
@@ -57,6 +59,17 @@ class AuthService extends ChangeNotifier {
     _account = null;
     _user = null;
     notifyListeners();
+  }
+
+  Future<void> logout() async {
+    _accountId = 0;
+    _userId = 0;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('account_id');
+    await prefs.remove('user_id');
+    // Удаление AES ключа
+    await SecureStorageHelper.deleteAesKey(); // ← удаляем AES-ключ
   }
 
   bool get isLoggedIn => accountId != 0 && _userId != 0;

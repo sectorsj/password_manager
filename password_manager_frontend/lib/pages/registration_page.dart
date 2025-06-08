@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:hashing_utility_package/secure_storage_helper.dart';
 import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/services/account_service.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
@@ -29,6 +30,63 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
   bool _isLoading = false;
   final _registrationService = RegistrationService();
+
+  Future<void> _submitRegistration() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _registrationService.register(
+        accountLogin: _accountLoginController.text.trim(),
+        emailAddress: _emailAddressController.text.trim(),
+        password: _passwordController.text.trim(),
+        userName: _userNameController.text.trim(),
+        userPhone: _phoneController.text.trim(),
+        userDescription: _descriptionController.text.trim(),
+      );
+
+      final rawAccountId = result['account_id'];
+      final rawUserId = result['user_id'];
+      final aesKey = result['aes_key'];
+
+      if (rawAccountId == null || rawUserId == null || aesKey == null) {
+        throw Exception('Отсутствуют необходимые поля в ответе сервера');
+      }
+
+      final accountId = rawAccountId is int
+          ? rawAccountId
+          : int.tryParse(rawAccountId.toString());
+      final userId =
+          rawUserId is int ? rawUserId : int.tryParse(rawUserId.toString());
+
+      if (accountId == null || userId == null) {
+        throw Exception('account_id или user_id не удалось преобразовать');
+      }
+
+      await SecureStorageHelper.setAesKey(aesKey);
+
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.setSession(accountId: accountId, userId: userId);
+
+      final account = await AccountService().fetchAccountById(accountId);
+      final user = await UserService().fetchUserById(userId);
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HomePage(account: account, user: user),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка регистрации: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

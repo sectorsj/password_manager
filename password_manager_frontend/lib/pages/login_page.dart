@@ -7,6 +7,7 @@ import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/services/user_service.dart';
 import 'package:password_manager_frontend/utils/ui_routes.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -21,6 +22,7 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   final _loginService = LoginService();
+  final _secureStorage = const FlutterSecureStorage();
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +65,7 @@ class _LoginPageState extends State<LoginPage> {
 
                             final rawAccountId = result['account_id'];
                             final rawUserId = result['user_id'];
+                            final aesKey = result['aes_key'];
 
                             if (rawAccountId == null || rawUserId == null) {
                               throw Exception(
@@ -81,11 +84,23 @@ class _LoginPageState extends State<LoginPage> {
                                   'account_id или user_id не удалось преобразовать в int');
                             }
 
+                            // Сохраняем сессию
                             await authService.setSession(
                               accountId: accountId,
                               userId: userId,
                             );
 
+                            // Сохраняем AES-ключ в secure storage
+                            if (aesKey != null &&
+                                aesKey is String &&
+                                aesKey.isNotEmpty) {
+                              await _secureStorage.write(
+                                  key: 'aes_key', value: aesKey);
+                            } else {
+                              throw Exception('AES ключ не получен от сервера');
+                            }
+
+                            // Загружаем данные аккаунта и пользователя
                             final account = await AccountService()
                                 .fetchAccountById(accountId);
                             final user =

@@ -7,14 +7,29 @@ class EncryptionUtility {
   static const int _ivLength = 12;
   final Key _key;
 
+  // Основной конструктор (использует .env)
   EncryptionUtility(DotEnv env) : _key = _loadKey(env);
 
+  /// Фабрика из .env
+  /// Используется на сервере
   factory EncryptionUtility.fromEnv() {
     final env = DotEnv()..load(); // Загружает .env автоматически
     return EncryptionUtility(env);
   }
 
-  /// Получаем ключ из .env
+  // Фабричный метод — создаёт EncryptionUtility из base64 AES ключа
+  factory EncryptionUtility.fromBase64Key(String keyBase64) {
+    final keyBytes = base64Decode(keyBase64);
+    if (keyBytes.length != 32) {
+      throw Exception('AES ключ должен быть 256-битным (32 байта)');
+    }
+    return EncryptionUtility._internal(Key(keyBytes));
+  }
+
+  // Приватный внутренний конструктор
+  EncryptionUtility._internal(this._key);
+
+  // Загрузка ключа из .env
   static Key _loadKey(DotEnv env) {
     final keyBase64 = env['APP_AES_KEY'];
     if (keyBase64 == null || keyBase64.isEmpty) {
@@ -40,8 +55,8 @@ class EncryptionUtility {
     );
 
     final encrypted = encrypter.encrypt(plainText, iv: iv);
-
     final combined = Uint8List(_ivLength + encrypted.bytes.length);
+
     combined.setRange(0, _ivLength, iv.bytes);
     combined.setRange(
         _ivLength, _ivLength + encrypted.bytes.length, encrypted.bytes);

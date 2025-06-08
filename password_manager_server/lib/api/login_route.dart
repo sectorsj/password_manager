@@ -11,8 +11,9 @@ import 'package:hashing_utility_package/hashing_utility.dart';
 class LoginRoute {
   final Connection connection;
   final EncryptionUtility encryption;
+  final DotEnv env;
 
-  LoginRoute(this.connection, DotEnv env) : encryption = EncryptionUtility(env);
+  LoginRoute(this.connection, this.env) : encryption = EncryptionUtility(env);
 
   Router get router {
     final router = Router();
@@ -97,6 +98,7 @@ class LoginRoute {
           'account_id': row['account_id'] ?? 0,
           'user_id': row['user_id'] ?? 0, // Добавляем userId
           'account_email': row['account_email'] ?? '',
+          'aes_key': env['APP_AES_KEY'],
         }),
         headers: {'Content-Type': 'application/json'},
       );

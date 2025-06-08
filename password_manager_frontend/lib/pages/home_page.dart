@@ -31,7 +31,7 @@ class HomePage extends StatelessWidget {
               icon: const Icon(Icons.logout),
               tooltip: 'Выйти',
               onPressed: () async {
-                authService.clearSession();
+                authService.logout(); // удалит и session, и aes_key
                 if (context.mounted) {
                   Navigator.pushNamedAndRemoveUntil(
                     context,
