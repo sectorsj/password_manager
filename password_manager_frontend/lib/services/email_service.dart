@@ -16,6 +16,11 @@ class EmailService extends BaseService {
         if (v is Uint8List) return v.toList();
         return v;
       });
+
+    if (email.categoryId == null || email.categoryId == 0) {
+      throw Exception('Некорректный categoryId: ${email.categoryId}');
+    }
+
     await post('/emails/add', jsonBody);
     return 'Почта (Email) добавлена успешно';
   }

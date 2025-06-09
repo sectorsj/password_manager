@@ -18,6 +18,7 @@ class EmailRoutes {
 
     router.get('/', _getEmailsByUserId);
     router.get('/<id>/password', _getDecryptedPasswordById);
+    router.post('/add', _addEmail);
 
     return router;
   }
@@ -30,7 +31,8 @@ class EmailRoutes {
 
     if (userId == null) {
       return Response.badRequest(
-        body: jsonEncode({'error': 'Отсутствует или неверный user_id'}),
+        body:
+            jsonEncode({'error': 'Отсутствует или неверный user_id: $userId'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
@@ -113,6 +115,77 @@ class EmailRoutes {
       print('Ошибка при получении расшифрованного пароля: $e');
       return Response.internalServerError(
         body: jsonEncode({'error': 'Ошибка сервера'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  Future<Response> _addEmail(Request request) async {
+    try {
+      final payload = await request.readAsString();
+      final data = jsonDecode(payload);
+
+      final emailAddress = data['email_address'];
+      final encryptedPassword = data['encrypted_password'];
+      final accountId = data['account_id'];
+      final categoryId = data['category_id'];
+      final userId = data['user_id'];
+      final emailDescription = data['email_description'];
+
+      if (emailAddress == null ||
+          encryptedPassword == null ||
+          accountId == null ||
+          userId == null) {
+        return Response.badRequest(
+          body: jsonEncode({'error': 'Обязательные поля отсутствуют'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      final result = await connection.execute(
+        Sql.named('''
+        INSERT INTO emails (
+          email_address,
+          encrypted_password,
+          email_description,
+          account_id,
+          category_id,
+          user_id,
+          created_at,
+          updated_at
+        ) VALUES (
+          @email_address,
+          @encrypted_password,
+          @email_description,
+          @account_id,
+          @category_id,
+          @user_id,
+          NOW(),
+          NOW()
+        )
+        RETURNING id
+      '''),
+        parameters: {
+          'email_address': emailAddress,
+          'encrypted_password': encryptedPassword,
+          'email_description': emailDescription,
+          'account_id': accountId,
+          'category_id': categoryId,
+          'user_id': userId,
+        },
+      );
+
+      final insertedId = result.first.toColumnMap()['id'];
+
+      return Response.ok(
+        jsonEncode({'message': 'Почта добавлена', 'id': insertedId}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e, stack) {
+      print('Ошибка при добавлении почты: $e');
+      print(stack);
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Ошибка сервера при добавлении'}),
         headers: {'Content-Type': 'application/json'},
       );
     }

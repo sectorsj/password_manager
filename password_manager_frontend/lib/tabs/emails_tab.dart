@@ -21,8 +21,7 @@ class _EmailsTabState extends State<EmailsTab> {
   List<Email> _emails = [];
   Map<int, bool> _showPasswordMap =
       {}; // Отображение пароля для каждого элемента
-  Map<int, String> _decryptedPasswords =
-      {}; // Отображение пароля для каждого элемента
+  Map<int, String> _decryptedPasswords = {};
 
   @override
   void initState() {
@@ -110,7 +109,12 @@ class _EmailsTabState extends State<EmailsTab> {
       context,
       MaterialPageRoute(
           builder: (context) => AddEmailFormWidget(
-              accountId: accountId, categoryId: categoryId, userId: userId)),
+              accountId: accountId,
+              // categoryId: categoryId,
+              categoryId: 2,
+              //  // 💡 вручную ставим "почты"
+              // TODO внедрить TabController в HomePage и связывать вкладки с ID категорий.
+              userId: userId)),
     );
     _loadEmails();
   }

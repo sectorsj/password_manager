@@ -58,6 +58,8 @@ class _AddEmailFormWidgetState extends State<AddEmailFormWidget> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
+    print(
+        'DEBUG: accountId=${widget.accountId}, userId=${widget.userId}, categoryId=${widget.categoryId}');
     if (_encryptionUtility == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ошибка шифрования')),
@@ -74,7 +76,9 @@ class _AddEmailFormWidgetState extends State<AddEmailFormWidget> {
       encryptedPassword: encryptedPassword,
       emailDescription: _descriptionController.text,
       accountId: widget.accountId,
-      categoryId: widget.categoryId,
+      categoryId: (widget.categoryId != null && widget.categoryId != 0)
+          ? widget.categoryId!
+          : 2,
       userId: widget.userId,
     );
 
