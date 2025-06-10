@@ -1,10 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:password_manager_frontend/models/website.dart';
 import 'package:password_manager_frontend/services/website_service.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
+import 'package:password_manager_frontend/widgets/add_website_form_widget.dart';
 
 class WebsitesTab extends StatefulWidget {
   const WebsitesTab({Key? key}) : super(key: key);
@@ -16,8 +16,8 @@ class WebsitesTab extends StatefulWidget {
 class _WebsitesTabState extends State<WebsitesTab> {
   final WebsiteService websiteService = WebsiteService();
   List<Website> _websites = [];
-  Map<int, bool> _showPasswordMap = {}; // состояние отображения пароля
-  final Map<int, String> _decryptedPasswords = {};
+  Map<int, bool> _showPasswordMap = {};
+  Map<int, String> _decryptedPasswords = {};
 
   @override
   void initState() {
@@ -37,8 +37,31 @@ class _WebsitesTabState extends State<WebsitesTab> {
     } catch (e) {
       print('Ошибка при загрузке сайтов: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Не удалось загрузить сайты (websites)')),
+        const SnackBar(content: Text('Не удалось загрузить сайты')),
       );
+    }
+  }
+
+  Future<void> _togglePasswordVisibility(int index, Website website) async {
+    final isVisible = _showPasswordMap[index] ?? false;
+
+    if (!isVisible && !_decryptedPasswords.containsKey(index)) {
+      try {
+        final decrypted = await websiteService.getDecryptedPassword(website.id);
+        setState(() {
+          _decryptedPasswords[index] = decrypted;
+          _showPasswordMap[index] = true;
+        });
+      } catch (e) {
+        print('Ошибка при расшифровке пароля: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось расшифровать пароль')),
+        );
+      }
+    } else {
+      setState(() {
+        _showPasswordMap[index] = !isVisible;
+      });
     }
   }
 
@@ -53,7 +76,7 @@ class _WebsitesTabState extends State<WebsitesTab> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('URL: ${website.websiteUrl}'),
-              Text('Login: ${website.websiteLogin}'),
+              Text('Логин: ${website.nickname ?? '—'}'),
               Text('Email: ${website.websiteEmail ?? '—'}'),
               Text('Описание: ${website.websiteDescription ?? '—'}'),
               Text('Категория: ${website.categoryId}'),
@@ -62,9 +85,7 @@ class _WebsitesTabState extends State<WebsitesTab> {
           actions: [
             TextButton(
               child: const Text('Закрыть'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ],
         );
@@ -72,27 +93,24 @@ class _WebsitesTabState extends State<WebsitesTab> {
     );
   }
 
-  // --- tabs/websites_tab.dart ---
-  Future<void> _togglePasswordVisibility(int index, Website website) async {
-    final isVisible = _showPasswordMap[index] ?? false;
+  void _addWebsite(BuildContext context) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final accountId = authService.accountId;
+    final categoryId = authService.categoryId;
+    final userId = authService.userId;
 
-    if (!isVisible && !_decryptedPasswords.containsKey(index)) {
-      try {
-        final decrypted = await websiteService.getDecryptedPassword(website.id);
-        setState(() {
-          _decryptedPasswords[index] = decrypted;
-          _showPasswordMap[index] = true;
-        });
-      } catch (e) {
-        print('Ошибка при расшифровке пароля: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Не удалось расшифровать пароль')));
-      }
-    } else {
-      setState(() {
-        _showPasswordMap[index] = !isVisible;
-      });
-    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddWebsiteFormWidget(
+          accountId: accountId,
+          categoryId: 2,
+          // 💡 фиксированная категория "Сайты" // TODO внедрить TabController в HomePage и связывать вкладки с ID категорий.
+          userId: userId,
+        ),
+      ),
+    );
+    _loadWebsites();
   }
 
   @override
@@ -100,13 +118,19 @@ class _WebsitesTabState extends State<WebsitesTab> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Сайты'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _addWebsite(context),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
           columns: const [
             DataColumn(label: Text('№')),
-            DataColumn(label: Text('Название сайта')),
+            DataColumn(label: Text('Название')),
             DataColumn(label: Text('URL')),
             DataColumn(label: Text('Логин')),
             DataColumn(label: Text('Email')),
@@ -116,37 +140,36 @@ class _WebsitesTabState extends State<WebsitesTab> {
           rows: _websites.asMap().entries.map((entry) {
             final index = entry.key;
             final website = entry.value;
-            final showPassword = _showPasswordMap[index] ?? false;
-            final decryptedPassword = _decryptedPasswords[index] ?? '';
+            final isVisible = _showPasswordMap[index] ?? false;
+            final decrypted = _decryptedPasswords[index] ?? '';
 
             return DataRow(
               cells: [
                 DataCell(Text('${index + 1}')),
                 DataCell(Text(website.websiteName)),
                 DataCell(Text(website.websiteUrl)),
-                DataCell(Text(website.websiteLogin)),
-                DataCell(Text(website.websiteEmail ?? '')),
+                DataCell(Text(website.nickname ?? '—')),
+                DataCell(Text(website.websiteEmail ?? '—')),
                 DataCell(Row(
                   children: [
                     Text(
-                      showPassword
-                          ? (decryptedPassword.isNotEmpty
-                              ? decryptedPassword
-                              : '[пароль загружается]')
+                      isVisible
+                          ? (decrypted.isNotEmpty ? decrypted : '[загрузка]')
                           : '****',
                     ),
                     IconButton(
-                        icon: Icon(showPassword
-                            ? Icons.visibility_off
-                            : Icons.visibility),
-                        onPressed: () =>
-                            _togglePasswordVisibility(index, website)),
+                      icon: Icon(
+                          isVisible ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () =>
+                          _togglePasswordVisibility(index, website),
+                    ),
                     IconButton(
                       icon: const Icon(Icons.copy),
                       onPressed: () {
-                        if (decryptedPassword.isNotEmpty) {
+                        if (decrypted.isNotEmpty) {
                           Clipboard.setData(
-                              ClipboardData(text: decryptedPassword));
+                            ClipboardData(text: decrypted),
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Пароль скопирован')),
                           );
@@ -155,11 +178,12 @@ class _WebsitesTabState extends State<WebsitesTab> {
                     ),
                   ],
                 )),
-                DataCell(IconButton(
-                  icon: const Icon(Icons.info_outline),
-                  tooltip: 'Подробнее',
-                  onPressed: () => _showWebsiteDetails(context, website),
-                ))
+                DataCell(
+                  IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    onPressed: () => _showWebsiteDetails(context, website),
+                  ),
+                ),
               ],
             );
           }).toList(),

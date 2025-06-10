@@ -9,11 +9,10 @@ class WebsiteService extends BaseService {
   }
 
   Future<String> addWebsite(Website website) async {
-    final jsonBody = website.toJson()
-      ..updateAll((k, v) {
-        if (v is Uint8List) return v.toList();
-        return v;
-      });
+    final jsonBody = website.toJson();
+
+    // Добавляем email_encrypted_password = encrypted_password по умолчанию
+    jsonBody['email_encrypted_password'] = website.encryptedPassword;
 
     await post('/websites/add', jsonBody);
     return 'Вебсайт (Website) добавлен успешно';

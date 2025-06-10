@@ -1,29 +1,35 @@
 import 'dart:convert';
 
+import 'package:dotenv/dotenv.dart';
+import 'package:hashing_utility_package/encryption_utility.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 class WebsiteRoutes {
   final Connection connection;
+  final EncryptionUtility encryption;
 
-  WebsiteRoutes(this.connection);
+  WebsiteRoutes(this.connection, DotEnv env)
+      : encryption = EncryptionUtility(env);
 
   Router get router {
     final router = Router();
 
     router.get('/', _getWebsiteByUserId);
+    router.get('/<id>/password', _getDecryptedWebsitePasswordById);
+    router.post('/add', _addWebsite);
+
     return router;
   }
 
-  // === ПОЛУЧЕНИЕ СПИСКА ВЕБСАЙТОВ ДЛЯ АККАУНТА ===
   Future<Response> _getWebsiteByUserId(Request request) async {
     final userIdStr = request.url.queryParameters['user_id'];
     final userId = int.tryParse(userIdStr ?? '');
 
     if (userId == null) {
       return Response.badRequest(
-        body: jsonEncode({'error': 'Missing or invalid user_id'}),
+        body: jsonEncode({'error': 'Отсутствует или неверный user id'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
@@ -31,29 +37,37 @@ class WebsiteRoutes {
     try {
       final result = await connection.execute(
         Sql.named('''
-          SELECT *
-          FROM websites
-          WHERE account_id = (SELECT account_id FROM users WHERE id = @userId)
-          '''),
+          SELECT w.id,
+                 w.encrypted_password,
+                 w.website_description,
+                 w.website_name,
+                 w.website_url,
+                 w.account_id,
+                 w.category_id,
+                 w.user_id,
+                 w.nickname_id,
+                 n.nickname AS nickname,
+                 w.email_id,
+                 e.email_address AS website_email,
+                 w.created_at,
+                 w.updated_at
+          FROM websites w
+          LEFT JOIN nicknames n ON w.nickname_id = n.id
+          LEFT JOIN emails e ON w.email_id = e.id
+          WHERE w.user_id = @userId
+        '''),
         parameters: {'userId': userId},
       );
 
       final websites = result.map((row) {
-        final raw = row.toColumnMap();
-        return {
-          'id': raw['id'],
-          'password_hash': raw['password_hash'],
-          'salt': raw['salt'],
-          'website_description': raw['website_description'],
-          'website_login': raw['website_login'],
-          'website_name': raw['website_name'],
-          'account_id': raw['account_id'],
-          'category_id': raw['category_id'],
-          'website_email': raw['website_email'],
-          'website_url': raw['website_url'],
-          'created_at': (raw['created_at'] as DateTime?)?.toIso8601String(),
-          'updated_at': (raw['updated_at'] as DateTime?)?.toIso8601String(),
-        };
+        final map = row.toColumnMap();
+        if (map['created_at'] is DateTime) {
+          map['created_at'] = (map['created_at'] as DateTime).toIso8601String();
+        }
+        if (map['updated_at'] is DateTime) {
+          map['updated_at'] = (map['updated_at'] as DateTime).toIso8601String();
+        }
+        return map;
       }).toList();
 
       return Response.ok(
@@ -61,8 +75,7 @@ class WebsiteRoutes {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e, stack) {
-      print('Ошибка при получении сайтов: $e');
-      print(stack);
+      print('Ошибка при получении сайтов: $e\n$stack');
       return Response.internalServerError(
         body: jsonEncode({'error': 'Ошибка сервера при получении сайтов'}),
         headers: {'Content-Type': 'application/json'},
@@ -70,38 +83,119 @@ class WebsiteRoutes {
     }
   }
 
-  // --- routes/website_routes.dart ---
-  // router.get('/<id>/password', _getDecryptedWebsitePasswordById);
   Future<Response> _getDecryptedWebsitePasswordById(
       Request request, String id) async {
     final websiteId = int.tryParse(id);
 
     if (websiteId == null) {
       return Response.badRequest(
-          body: jsonEncode({'error': 'Invalid website ID'}),
-          headers: {'Content-Type': 'application/json'});
+        body: jsonEncode({'error': 'Неверный website ID'}),
+        headers: {'Content-Type': 'application/json'},
+      );
     }
+
     try {
       final result = await connection.execute(
-        Sql.named('''
-            SELECT decrypted_password
-            FROM websites
-            WHERE id = @id
-            '''),
+        Sql.named('SELECT encrypted_password FROM websites WHERE id = @id'),
         parameters: {'id': websiteId},
       );
-      if (result.isEmpty) {
-        return Response.notFound(jsonEncode({'error': 'Website not found'}),
-            headers: {'Content-Type': 'application/json'});
-      }
-      final password = result.first.toColumnMap()['decrypted_password'];
 
-      return Response.ok(jsonEncode({'decrypted_password': password}),
-          headers: {'Content-Type': 'application/json'});
+      if (result.isEmpty) {
+        return Response.notFound(
+          jsonEncode({'error': 'Website не найден'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      final encrypted =
+          result.first.toColumnMap()['encrypted_password'] as String;
+      final decrypted = encryption.decryptText(encrypted);
+
+      return Response.ok(
+        jsonEncode({'decrypted_password': decrypted}),
+        headers: {'Content-Type': 'application/json'},
+      );
     } catch (e) {
+      print('Ошибка при получении расшифрованного пароля: $e');
       return Response.internalServerError(
-          body: jsonEncode({'error': 'Server error'}),
-          headers: {'Content-Type': 'application/json'});
+        body: jsonEncode({'error': 'Ошибка сервера'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  Future<Response> _addWebsite(Request request) async {
+    try {
+      final body = await request.readAsString();
+      final data = jsonDecode(body);
+
+      final encryptedPassword = data['encrypted_password'] as String?;
+      final websiteName = data['website_name'] as String?;
+      final websiteUrl = data['website_url'] as String?;
+      final nickname = data['nickname'] as String?;
+      final websiteEmail = data['website_email'] as String?;
+      final websiteDescription = data['website_description'] as String?;
+      final accountId = data['account_id'] as int?;
+      final categoryId = data['category_id'] as int?;
+      final userId = data['user_id'] as int?;
+      final emailEncryptedPassword =
+          data['email_encrypted_password'] as String? ?? '';
+
+      if ([
+        encryptedPassword,
+        websiteName,
+        websiteUrl,
+        nickname,
+        accountId,
+        categoryId,
+        userId
+      ].any((element) =>
+          element == null || (element is String && element.trim().isEmpty))) {
+        return Response.badRequest(
+          body:
+              jsonEncode({'error': 'Некоторые обязательные поля отсутствуют'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      await connection.execute(Sql.named('''
+        SELECT create_website_entry(
+          @accountId,
+          @userId,
+          @categoryId,
+          @nickname,
+          @encryptedPassword,
+          @websiteName,
+          @websiteUrl,
+          @description,
+          @email,
+          @emailPassword,
+          @websiteEmail
+        )
+      '''), parameters: {
+        'accountId': accountId,
+        'userId': userId,
+        'categoryId': categoryId,
+        'nickname': nickname,
+        'encryptedPassword': encryptedPassword,
+        'websiteName': websiteName,
+        'websiteUrl': websiteUrl,
+        'description': websiteDescription,
+        'email': websiteEmail,
+        'emailPassword': emailEncryptedPassword,
+        'websiteEmail': websiteEmail,
+      });
+
+      return Response.ok(
+        jsonEncode({'message': 'Сайт успешно добавлен'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e, stack) {
+      print('Ошибка при добавлении сайта: $e\n$stack');
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Ошибка сервера при добавлении сайта'}),
+        headers: {'Content-Type': 'application/json'},
+      );
     }
   }
 }

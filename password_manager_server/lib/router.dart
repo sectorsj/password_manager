@@ -19,7 +19,7 @@ Handler buildHandler(Connection connection, DotEnv env) {
     ..mount('/accounts', AccountRoutes(connection).router)
     ..mount('/users', UserRoutes(connection).router)
     ..mount('/emails', EmailRoutes(connection, env).router)
-    ..mount('/websites', WebsiteRoutes(connection).router)
+    ..mount('/websites', WebsiteRoutes(connection, env).router)
     ..mount('/network-connections', NetworkConnectionRoutes(connection).router);
 
   return Pipeline()
