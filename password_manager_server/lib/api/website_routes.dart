@@ -133,13 +133,15 @@ class WebsiteRoutes {
       final websiteName = data['website_name'] as String?;
       final websiteUrl = data['website_url'] as String?;
       final nickname = data['nickname'] as String?;
-      final websiteEmail = data['website_email'] as String?;
+      final websiteEmail =
+          data['website_email'] as String?; // используется как email_address
       final websiteDescription = data['website_description'] as String?;
       final accountId = data['account_id'] as int?;
       final categoryId = data['category_id'] as int?;
       final userId = data['user_id'] as int?;
       final emailEncryptedPassword =
           data['email_encrypted_password'] as String? ?? '';
+      final emailDescription = data['email_description'] as String?;
 
       if ([
         encryptedPassword,
@@ -148,9 +150,8 @@ class WebsiteRoutes {
         nickname,
         accountId,
         categoryId,
-        userId
-      ].any((element) =>
-          element == null || (element is String && element.trim().isEmpty))) {
+        userId,
+      ].any((e) => e == null || (e is String && e.trim().isEmpty))) {
         return Response.badRequest(
           body:
               jsonEncode({'error': 'Некоторые обязательные поля отсутствуют'}),
@@ -159,20 +160,20 @@ class WebsiteRoutes {
       }
 
       await connection.execute(Sql.named('''
-        SELECT create_website_entry(
-          @accountId,
-          @userId,
-          @categoryId,
-          @nickname,
-          @encryptedPassword,
-          @websiteName,
-          @websiteUrl,
-          @description,
-          @email,
-          @emailPassword,
-          @websiteEmail
-        )
-      '''), parameters: {
+      SELECT create_website_entry(
+        @accountId,
+        @userId,
+        @categoryId,
+        @nickname,
+        @encryptedPassword,
+        @websiteName,
+        @websiteUrl,
+        @websiteDescription,
+        @email,
+        @emailPassword,
+        @emailDescription
+      )
+    '''), parameters: {
         'accountId': accountId,
         'userId': userId,
         'categoryId': categoryId,
@@ -180,10 +181,10 @@ class WebsiteRoutes {
         'encryptedPassword': encryptedPassword,
         'websiteName': websiteName,
         'websiteUrl': websiteUrl,
-        'description': websiteDescription,
+        'websiteDescription': websiteDescription,
         'email': websiteEmail,
         'emailPassword': emailEncryptedPassword,
-        'websiteEmail': websiteEmail,
+        'emailDescription': emailDescription,
       });
 
       return Response.ok(
