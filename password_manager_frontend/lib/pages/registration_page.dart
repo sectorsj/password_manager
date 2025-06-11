@@ -73,11 +73,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
       final user = await UserService().fetchUserById(userId);
 
       if (!mounted) return;
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(
           builder: (_) => HomePage(account: account, user: user),
         ),
+        (route) => false,
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

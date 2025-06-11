@@ -110,7 +110,7 @@ class _LoginPageState extends State<LoginPage> {
                                 "DEBUG Account (после fetch): ${account.toJson()}");
 
                             if (!mounted) return;
-                            Navigator.pushReplacement(
+                            Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => HomePage(
@@ -118,6 +118,7 @@ class _LoginPageState extends State<LoginPage> {
                                   user: user,
                                 ),
                               ),
+                              (route) => false,
                             );
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
