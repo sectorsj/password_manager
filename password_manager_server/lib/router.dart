@@ -20,7 +20,8 @@ Handler buildHandler(Connection connection, DotEnv env) {
     ..mount('/users', UserRoutes(connection).router)
     ..mount('/emails', EmailRoutes(connection, env).router)
     ..mount('/websites', WebsiteRoutes(connection, env).router)
-    ..mount('/network-connections', NetworkConnectionRoutes(connection).router);
+    ..mount('/network-connections',
+        NetworkConnectionRoutes(connection, env).router);
 
   return Pipeline()
       .addMiddleware(logRequests())

@@ -1,23 +1,25 @@
-// dart
+// NetworkConnectionRoutes.dart
 
 import 'dart:convert';
+import 'package:dotenv/dotenv.dart';
+import 'package:hashing_utility_package/encryption_utility.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 class NetworkConnectionRoutes {
   final Connection connection;
+  final EncryptionUtility encryption;
 
-  NetworkConnectionRoutes(this.connection);
+  NetworkConnectionRoutes(this.connection, DotEnv env)
+      : encryption = EncryptionUtility(env);
 
   Router get router {
     final router = Router();
 
-    // Получение всех сетевых подключений по user_id
     router.get('/', _getNetworkConnectionsByUserId);
-
-    // Получение расшифрованного пароля по ID подключения
     router.get('/<id>/password', _getDecryptedPasswordById);
+    router.post('/add', _addNetworkConnection);
 
     return router;
   }
@@ -34,32 +36,37 @@ class NetworkConnectionRoutes {
     }
 
     try {
-      final result = await connection.execute(
-        Sql.named('''
-          SELECT id, network_connection_name, network_connection_login,
-                 network_connection_description, ipv4, ipv6,
-                 account_id, category_id, created_at, updated_at
-          FROM network_connections
-          WHERE account_id = (SELECT account_id FROM users WHERE id = @userId)
-        '''),
-        parameters: {'userId': userId},
-      );
+      final result = await connection.execute(Sql.named('''
+        SELECT nc.id,
+               nc.network_connection_name,
+               nc.encrypted_password,
+               nc.network_connection_description,
+               nc.ipv4,
+               nc.ipv6,
+               nc.account_id,
+               nc.category_id,
+               nc.user_id,
+               nc.nickname_id,
+               n.nickname,
+               nc.email_id,
+               e.email_address AS website_email,
+               nc.created_at,
+               nc.updated_at
+        FROM network_connections nc
+        LEFT JOIN nicknames n ON nc.nickname_id = n.id
+        LEFT JOIN emails e ON nc.email_id = e.id
+        WHERE nc.user_id = @userId
+      '''), parameters: {'userId': userId});
 
       final connections = result.map((row) {
-        final raw = row.toColumnMap();
-        return {
-          'id': raw['id'],
-          'network_connection_name': raw['network_connection_name'],
-          'network_connection_login': raw['network_connection_login'],
-          'network_connection_description':
-              raw['network_connection_description'],
-          'ipv4': raw['ipv4'],
-          'ipv6': raw['ipv6'],
-          'account_id': raw['account_id'],
-          'category_id': raw['category_id'],
-          'created_at': (raw['created_at'] as DateTime?)?.toIso8601String(),
-          'updated_at': (raw['updated_at'] as DateTime?)?.toIso8601String(),
-        };
+        final map = row.toColumnMap();
+        if (map['created_at'] is DateTime) {
+          map['created_at'] = (map['created_at'] as DateTime).toIso8601String();
+        }
+        if (map['updated_at'] is DateTime) {
+          map['updated_at'] = (map['updated_at'] as DateTime).toIso8601String();
+        }
+        return map;
       }).toList();
 
       return Response.ok(
@@ -67,20 +74,18 @@ class NetworkConnectionRoutes {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e, stack) {
-      print('Ошибка при получении сетевых подключений: $e');
-      print(stack);
+      print('Ошибка при получении подключений: $e\n$stack');
       return Response.internalServerError(
-        body: jsonEncode(
-            {'error': 'Ошибка сервера при получении сетевых подключений'}),
+        body: jsonEncode({'error': 'Ошибка сервера при получении подключений'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
   }
 
   Future<Response> _getDecryptedPasswordById(Request request, String id) async {
-    final connectionId = int.tryParse(id);
+    final connId = int.tryParse(id);
 
-    if (connectionId == null) {
+    if (connId == null) {
       return Response.badRequest(
         body: jsonEncode({'error': 'Invalid connection ID'}),
         headers: {'Content-Type': 'application/json'},
@@ -88,14 +93,9 @@ class NetworkConnectionRoutes {
     }
 
     try {
-      final result = await connection.execute(
-        Sql.named('''
-          SELECT decrypted_password
-          FROM network_connections
-          WHERE id = @id
-        '''),
-        parameters: {'id': connectionId},
-      );
+      final result = await connection.execute(Sql.named('''
+        SELECT encrypted_password FROM network_connections WHERE id = @id
+      '''), parameters: {'id': connId});
 
       if (result.isEmpty) {
         return Response.notFound(
@@ -104,17 +104,94 @@ class NetworkConnectionRoutes {
         );
       }
 
-      final decryptedPassword =
-          result.first.toColumnMap()['decrypted_password'];
+      final encrypted =
+          result.first.toColumnMap()['encrypted_password'] as String;
+      final decrypted = encryption.decryptText(encrypted);
 
       return Response.ok(
-        jsonEncode({'decrypted_password': decryptedPassword}),
+        jsonEncode({'decrypted_password': decrypted}),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
       print('Ошибка при расшифровке пароля: $e');
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Server error'}),
+        body: jsonEncode({'error': 'Ошибка сервера'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+  Future<Response> _addNetworkConnection(Request request) async {
+    try {
+      final body = await request.readAsString();
+      final data = jsonDecode(body);
+
+      final encryptedPassword = data['encrypted_password'] as String?;
+      final connectionName = data['network_connection_name'] as String?;
+      final nickname = data['nickname'] as String?;
+      final ipv4 = data['ipv4'] as String?;
+      final ipv6 = data['ipv6'] as String?;
+      final description = data['network_connection_description'] as String?;
+      final email = data['website_email'] as String?;
+      final emailPassword = data['email_encrypted_password'] as String? ?? '';
+      final emailDescription = data['email_description'] as String?;
+      final accountId = data['account_id'] as int?;
+      final categoryId = data['category_id'] as int?;
+      final userId = data['user_id'] as int?;
+
+      if ([
+        encryptedPassword,
+        connectionName,
+        nickname,
+        accountId,
+        categoryId,
+        userId
+      ].any((v) => v == null || (v is String && v.trim().isEmpty))) {
+        return Response.badRequest(
+          body: jsonEncode({'error': 'Отсутствуют обязательные поля'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      await connection.execute(Sql.named('''
+        SELECT create_network_connection_with_nickname_and_email(
+          @accountId,
+          @userId,
+          @categoryId,
+          @nickname,
+          @encryptedPassword,
+          @connectionName,
+          @ipv4,
+          @ipv6,
+          @description,
+          @email,
+          @emailPassword,
+          @emailDescription
+        )
+      '''), parameters: {
+        'accountId': accountId,
+        'userId': userId,
+        'categoryId': categoryId,
+        'nickname': nickname,
+        'encryptedPassword': encryptedPassword,
+        'connectionName': connectionName,
+        'ipv4': ipv4,
+        'ipv6': ipv6,
+        'description': description,
+        'email': email,
+        'emailPassword': emailPassword,
+        'emailDescription': emailDescription,
+      });
+
+      return Response.ok(
+        jsonEncode({'message': 'Подключение успешно добавлено'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    } catch (e, stack) {
+      print('Ошибка при добавлении подключения: $e\n$stack');
+      return Response.internalServerError(
+        body:
+            jsonEncode({'error': 'Ошибка сервера при добавлении подключения'}),
         headers: {'Content-Type': 'application/json'},
       );
     }

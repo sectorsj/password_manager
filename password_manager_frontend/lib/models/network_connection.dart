@@ -1,15 +1,16 @@
-import 'dart:typed_data';
-
 class NetworkConnection {
   final int id;
   final String networkConnectionName;
   final String? ipv4;
   final String? ipv6;
-  final String networkConnectionLogin;
   final String encryptedPassword;
-  final int accountId;
-  final int categoryId;
   final String? networkConnectionDescription;
+  final int accountId;
+  final int? userId;
+  final int? nicknameId;
+  final String? nickname;
+  final int? emailId;
+  final int categoryId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -18,11 +19,14 @@ class NetworkConnection {
     required this.networkConnectionName,
     this.ipv4,
     this.ipv6,
-    required this.networkConnectionLogin,
     required this.encryptedPassword,
-    required this.accountId,
-    required this.categoryId,
     this.networkConnectionDescription,
+    required this.accountId,
+    this.userId,
+    this.nicknameId,
+    this.nickname,
+    this.emailId,
+    required this.categoryId,
     this.createdAt,
     this.updatedAt,
   });
@@ -33,11 +37,14 @@ class NetworkConnection {
         networkConnectionName: json['network_connection_name'],
         ipv4: json['ipv4'],
         ipv6: json['ipv6'],
-        networkConnectionLogin: json['network_connection_login'],
         encryptedPassword: json['encrypted_password'],
-        accountId: json['account_id'],
-        categoryId: json['category_id'],
         networkConnectionDescription: json['network_connection_description'],
+        accountId: json['account_id'],
+        userId: json['user_id'],
+        nicknameId: json['nickname_id'],
+        nickname: json['nickname'],
+        emailId: json['email_id'],
+        categoryId: json['category_id'],
         createdAt: json['created_at'] != null
             ? DateTime.parse(json['created_at'])
             : null,
@@ -51,11 +58,13 @@ class NetworkConnection {
         'network_connection_name': networkConnectionName,
         'ipv4': ipv4,
         'ipv6': ipv6,
-        'network_connection_login': networkConnectionLogin,
-        'encryptedPassword': encryptedPassword,
-        'account_id': accountId,
-        'category_id': categoryId,
+        'encrypted_password': encryptedPassword,
         'network_connection_description': networkConnectionDescription,
+        'account_id': accountId,
+        'user_id': userId,
+        'nickname': nickname,
+        'email_id': emailId,
+        'category_id': categoryId,
         'created_at': createdAt?.toIso8601String(),
         'updated_at': updatedAt?.toIso8601String(),
       };

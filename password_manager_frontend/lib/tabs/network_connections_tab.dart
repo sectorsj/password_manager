@@ -1,11 +1,10 @@
-// dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:password_manager_frontend/models/network_connection.dart';
 import 'package:password_manager_frontend/services/network_connection_service.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
+import 'package:password_manager_frontend/widgets/add_network_connection_form_widget.dart';
 
 class NetworkConnectionsTab extends StatefulWidget {
   const NetworkConnectionsTab({Key? key}) : super(key: key);
@@ -73,7 +72,7 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
           children: [
             Text('IPv4: ${conn.ipv4 ?? '—'}'),
             Text('IPv6: ${conn.ipv6 ?? '—'}'),
-            Text('Логин: ${conn.networkConnectionLogin}'),
+            Text('Описание: ${conn.networkConnectionDescription ?? '—'}'),
             Text('Категория: ${conn.categoryId}'),
           ],
         ),
@@ -87,21 +86,42 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
     );
   }
 
+  void _addConnection(BuildContext context) async {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddNetworkConnectionFormWidget(
+          accountId: auth.accountId,
+          categoryId: 3, // 💡 фиксированная категория "Интернет"
+        ),
+      ),
+    );
+    _loadConnections();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Сетевые подключения')),
+      appBar: AppBar(
+        title: const Text('Сетевые подключения'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => _addConnection(context),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: DataTable(
           columns: const [
             DataColumn(label: Text('№')),
-            DataColumn(label: Text('Имя подключения')),
+            DataColumn(label: Text('Название')),
             DataColumn(label: Text('IPv4')),
             DataColumn(label: Text('IPv6')),
-            DataColumn(label: Text('Логин')),
             DataColumn(label: Text('Пароль')),
-            DataColumn(label: Text('')),
+            DataColumn(label: Text('Подробнее')),
           ],
           rows: _connections.asMap().entries.map((entry) {
             final index = entry.key;
@@ -115,7 +135,6 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
                 DataCell(Text(conn.networkConnectionName)),
                 DataCell(Text(conn.ipv4 ?? '—')),
                 DataCell(Text(conn.ipv6 ?? '—')),
-                DataCell(Text(conn.networkConnectionLogin)),
                 DataCell(Row(
                   children: [
                     Text(isShown
@@ -129,10 +148,12 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
                     IconButton(
                       icon: const Icon(Icons.copy),
                       onPressed: () {
-                        Clipboard.setData(ClipboardData(text: password));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Пароль скопирован')),
-                        );
+                        if (password.isNotEmpty) {
+                          Clipboard.setData(ClipboardData(text: password));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Пароль скопирован')),
+                          );
+                        }
                       },
                     ),
                   ],
