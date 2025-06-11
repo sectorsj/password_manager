@@ -160,7 +160,7 @@ class WebsiteRoutes {
       }
 
       await connection.execute(Sql.named('''
-      SELECT create_website_entry(
+      SELECT create_website_with_nickname_and_email(
         @accountId,
         @userId,
         @categoryId,
