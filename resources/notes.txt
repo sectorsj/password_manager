@@ -1,0 +1,656 @@
+import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/pages/splash_screen_page.dart';
+import 'pages/registration_page.dart';
+import 'pages/login_page.dart';
+import 'pages/home_page.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Password Manager',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      initialRoute: '/splash',
+      routes: {
+        '/splash': (context) => const SplashScreenPage(),
+        '/login': (context) => LoginPage(),
+        '/register': (context) => RegistrationPage(),
+        '/home': (context) => const HomePage(),
+      },
+    );
+  }
+}
+
+
+class Email {
+  final int id;
+  final String address;
+  final String description;
+  final String passwordHash;
+  final String salt;
+  final String accountId;
+  final String categoryId;
+
+  Email({
+    required this.id,
+    required this.address,
+    required this.description,
+    required this.passwordHash,
+    required this.salt,
+    required this.accountId,
+    required this.categoryId
+  });
+
+  factory Email.fromJson(Map<String, dynamic> json) {
+    return Email(
+        id: json['id'],
+        address: json ['address'],
+        description: json ['description'],
+        passwordHash: json ['passwordHash'],
+        salt: json ['salt'],
+        accountId: json ['accountId'],
+        categoryId: json ['categoryId']
+    );
+  }
+}
+
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:password_manager_frontend/models/email.dart';
+
+class EmailService {
+  final String baseUrl = 'http://localhost:8080';
+
+  // Получить все Email для аккаунта
+  Future<List<Email>> getEmails(int accountId) async {
+    final response = await http.get(Uri.parse('$baseUrl/emails/$accountId'));
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body) as List<dynamic>;
+      return jsonData.map((item) => Email.fromJson(item)).toList();
+    } else {
+      throw Exception('Неудача при загрузке электронных почт');
+    }
+  }
+
+  // Добавить Email
+  Future<String> addEmail(String email, String password, String salt, String description, int accountId, int categoryId, int userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/emails/add'),
+      body: {
+        'email_address': email,
+        'password_hash': password,
+        'salt': salt,
+        'email_description': description,
+        'account_id': accountId.toString(),
+        'category_id': categoryId.toString(),
+        'user_id': userId.toString(),
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return 'Почта добавлена успешно';
+    } else {
+      return 'Ошибка при добавлении новой почты';
+    }
+  }
+}
+
+
+import 'package:flutter/material.dart';
+
+class AuthService extends ChangeNotifier {
+  int _accountId = 0;
+  int _categoryId = 0;
+  int _userId = 0;
+
+  int get accountId => _accountId;
+  int get categoryId => _categoryId;
+  int get userId => _userId;
+
+  void setAccountData(int accountId, int categoryId, int userId) {
+    _accountId = accountId;
+    _categoryId = categoryId;
+    _userId = userId;
+    notifyListeners();
+  }
+}
+
+
+
+import 'package:flutter/material.dart';
+import '../tabs/emails_tab.dart';
+import '../tabs/network_connections_tab.dart';
+import '../tabs/websites_tab.dart';
+
+class HomePage extends StatelessWidget {
+  const HomePage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Password Manager'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Emails'),
+              Tab(text: 'Network Connections'),
+              Tab(text: 'Websites'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            EmailsTab(),
+            NetworkConnectionsTab(),
+            WebsitesTab(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:password_manager_frontend/pages/home_page.dart';
+import 'package:password_manager_frontend/pages/registration_page.dart';
+
+class LoginPage extends StatefulWidget {
+  LoginPage({Key? key}) : super(key: key);
+
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  int _accountId = 0;
+  int _emailId = 0;
+
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+
+  Future<void> _login(BuildContext context) async {
+    String username = usernameController.text.trim();
+    String password = passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      _showError(context, 'Имя пользователя и пароль не могут быть пустыми');
+      return;
+    }
+
+    var url = Uri.parse('http://localhost:8080/login');  // Замените на IP-адрес при необходимости
+
+    // Отправка имени пользователя и пароля на сервер
+    var response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'username': username, 'password': password}),
+    );
+
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+      setState(() {
+        _accountId = data['accountId'];
+        _emailId = data['emailId'];
+      });
+      // Успешный вход
+      print('Вход выполнен успешно. Переход на главную страницу...');
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+    } else {
+      _showError(context, 'Ошибка входа. Ошибка сервера: ${response.body}');
+    }
+  }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Login'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextField(
+              controller: usernameController,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _login(context),
+              child: const Text('Login'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => RegistrationPage()));
+              },
+              child: const Text('Register'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:hashing_utility_package/hashing_utility.dart'; // Подключение вашего класса HashingUtility
+import 'dart:convert';
+import '';
+
+class RegistrationPage extends StatelessWidget {
+  RegistrationPage({Key? key}) : super(key: key);
+
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
+
+  Future<void> _register(BuildContext context) async {
+    String username = usernameController.text.trim();
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+    String confirmPassword = confirmPasswordController.text.trim();
+
+    print('Registering with username: $username, email: $email, password: $password');
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Пароли не совпадают'),
+      ));
+      return;
+    }
+
+    // Генерация соли и хэша пароля
+    Map<String, String> hashedData = await HashingUtility.hashPassword(password);
+
+    var url = Uri.parse('http://localhost:8080/register');
+    var response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},  // Отправка данных в формате JSON
+        body: jsonEncode({
+        'username': username,
+        'email': email,
+        'password': hashedData['hash'],  // Хэшированный пароль
+        'salt': hashedData['salt'],      // Соль
+        }),   // Отправляем соль
+    );
+
+    if (response.statusCode == 200) {
+      print('Регистрация прошла успешно. Server response: ${response.body}');
+      Navigator.pop(context); // Registration successful, navigate back to login screen
+    } else {
+      print('Регистрация прошла неудачно. Server response code: ${response.statusCode}, message: ${response.body}');
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Регистрация прошла неудачно. Имя пользователя или почта уже используются'),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Register'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextField(
+              controller: usernameController,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(labelText: 'Email'),
+            ),
+            TextField(
+              controller: passwordController,
+              decoration: const InputDecoration(labelText: 'Password'),
+              obscureText: true,
+            ),
+            TextField(
+              controller: confirmPasswordController,
+              decoration: const InputDecoration(labelText: 'Confirm Password'),
+              obscureText: true,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => _register(context),
+              child: const Text('Register'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+import 'package:flutter/material.dart';
+import 'dart:async';
+
+class SplashScreenPage extends StatefulWidget {
+  const SplashScreenPage({Key? key}) : super(key: key);
+
+  @override
+  _SplashScreenPageState createState() => _SplashScreenPageState();
+}
+
+class _SplashScreenPageState extends State<SplashScreenPage> {
+  @override
+  void initState() {
+    super.initState();
+    Timer(const Duration(seconds: 3), (){
+      Navigator.pushReplacementNamed(context,'/login');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Colors.blue,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.security,
+              size: 100.0,
+              color: Colors.white,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Password Manager',
+              style: TextStyle(
+                fontSize: 24.0,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 10),
+            CircularProgressIndicator(
+              color: Colors.white,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/models/email.dart';
+import 'package:password_manager_frontend/services/email_service.dart';
+import 'package:hashing_utility_package/hashing_utility.dart';
+
+class EmailFormPage extends StatefulWidget {
+  final int? accountId;
+  final int? categoryId;
+  final int? userId;
+  const EmailFormPage({Key? key, this.accountId, this.categoryId, this.userId}) : super(key: key);
+
+  @override
+  _EmailFormPageState createState() => _EmailFormPageState();
+}
+
+class _EmailFormPageState extends State<EmailFormPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
+  final EmailService _emailService = EmailService();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Add Email'),
+      ),
+      body: Form(
+        key: _formKey,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter an email';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Password'),
+                obscureText: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a password';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+              const SizedBox(height: 16.0),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    Map<String, String> hashedData =
+                        await HashingUtility.hashPassword(
+                            _passwordController.text);
+
+                    String email = _emailController.text;
+                    String password = hashedData['hash']!;
+                    String salt = hashedData['salt']!;
+                    String description = _descriptionController.text;
+                    int accountId = widget.accountId ?? 0;   // Используйте значение по умолчанию, если accountId равен null
+                    int categoryId = widget.categoryId ?? 0;
+                    int userId = widget.userId ?? 0;
+
+                    String result = await _emailService.addEmail(
+                      email,
+                      password,
+                      salt,
+                      description,
+                      accountId,
+                      categoryId,
+                      userId,
+                    );
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(result)),
+                    );
+
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';  // Для копирования пароля
+import 'package:password_manager_frontend/models/email.dart';
+import 'package:password_manager_frontend/services/email_service.dart';
+import 'package:password_manager_frontend/pages/email_form_page.dart';
+
+class EmailsTab extends StatefulWidget {
+  const EmailsTab({Key? key}) : super(key: key);
+
+  @override
+  _EmailsTabState createState() => _EmailsTabState();
+}
+
+class _EmailsTabState extends State<EmailsTab> {
+  // final ApiService apiService = ApiService();
+  final EmailService emailService = EmailService();
+  List<Email> _emails = [];
+  Map<int, bool> _showPasswordMap = {};  // Отображение пароля для каждого элемента
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmails();
+  }
+
+  Future<void> _loadEmails() async {
+
+    List<Email> emails = await emailService.getEmails(1);
+    setState(() {
+      _emails = emails;
+    });
+  }
+
+  void _showEmailDetails(BuildContext context, Email email) {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(email.address),
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Description: ${email.description}'),
+                Text('Salt: ${email.salt}'),
+                Text('Category ID: ${email.categoryId}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Close'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  },
+              ),
+            ],
+          );
+        },
+      );
+  }
+
+  void _addEmail(BuildContext context) async {
+    int accountId = 1;
+    int categoryId = 1;
+    int userId = 1;
+
+    await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => EmailFormPage(accountId: accountId, categoryId: categoryId, userId: userId)),
+    );
+    _loadEmails();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Emails'),
+        actions: [
+          IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () => _addEmail(context)
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text('№')),
+            DataColumn(label: Text('Email')),
+            DataColumn(label: Text('Пароль')),
+            DataColumn(label: Text('Описание')),
+          ],
+          rows: _emails.asMap().entries.map((entry) {
+            int index = entry.key;
+            Email email = entry.value;
+
+            // Получаем текущее состояние отображения пароля
+            bool _showPassword = _showPasswordMap[index] ?? false;
+
+            return DataRow(
+              cells: [
+                DataCell(Text((index + 1).toString())),
+                DataCell(Text(email.address)),  // email_address
+                DataCell(Row(
+                  children: [
+                    // Отображаем пароль или скрываем его
+                    Text(_showPassword ? email.passwordHash : '****'),
+                    IconButton(
+                      icon: Icon(_showPassword ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () {
+                        setState(() {
+                          _showPasswordMap[index] = !_showPassword;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: email.passwordHash));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Пароль скопирован')),
+                        );
+                      },
+                    ),
+                  ],
+                )),
+                DataCell(Text(email.description)),  // email_description
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+
+при регистрации в бд не создались новые записи в таблицах users, emails
+а также не выполняется вход в аккаунт
