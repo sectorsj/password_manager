@@ -128,17 +128,15 @@ lib/generated_plugin_registrant.dart
 # Custom additions
 *.jpg
 *.jpeg
-*.png
+
 *.gif
 *.bmp
 *.tiff
 *.svg
 *.webp
 *.xml
-*.json
-pubspec.yaml
-analysis_options.yaml
-.metadata
+
+
 
 
 /android/.gitignore
