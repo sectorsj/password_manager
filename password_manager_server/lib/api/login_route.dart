@@ -1,12 +1,10 @@
 import 'dart:convert';
 
 import 'package:hashing_utility_package/encryption_utility.dart';
+import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
-import 'package:postgres/postgres.dart';
 import 'package:dotenv/dotenv.dart' show DotEnv;
-import 'package:password_manager_server/utils/hash_parser.dart';
-import 'package:hashing_utility_package/hashing_utility.dart';
 
 class LoginRoute {
   final Connection connection;

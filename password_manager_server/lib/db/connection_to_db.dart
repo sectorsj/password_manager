@@ -1,5 +1,5 @@
-import 'package:postgres/postgres.dart';
 import 'package:dotenv/dotenv.dart';
+import 'package:postgres/postgres.dart';
 
 Future<Connection> createConnection(DotEnv env) async {
   final connection = await Connection.open(

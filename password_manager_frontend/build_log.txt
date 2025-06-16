@@ -1,12 +1,12 @@
---- Начало сборки: 15.06.2025 21:42:28 --- 
+--- Начало сборки: 16.06.2025 14:54:26 --- 
 --- flutter clean --- 
-Deleting build...                                                  108ms
-Deleting .dart_tool...                                              25ms
+Deleting build...                                                   33ms
+Deleting .dart_tool...                                               9ms
 Deleting Generated.xcconfig...                                       0ms
 Deleting flutter_export_environment.sh...                            0ms
 Deleting ephemeral...                                                0ms
 Deleting ephemeral...                                                0ms
-Deleting ephemeral...                                               31ms
+Deleting ephemeral...                                               25ms
 Deleting .flutter-plugins-dependencies...                            0ms
 Deleting .flutter-plugins...                                         0ms
 --- flutter pub get --- 
@@ -60,6 +60,6 @@ Got dependencies!
 Try `flutter pub outdated` for more information.
 --- flutter build windows --- 
 
-Building Windows application...                                    75,0s
+Building Windows application...                                    74,0s
 √ Built build\windows\x64\runner\Release\password_manager_frontend.exe
---- УСПЕШНАЯ СБОРКА: 15.06.2025 21:42:28 --- 
+--- УСПЕШНАЯ СБОРКА: 16.06.2025 14:54:26 --- 
