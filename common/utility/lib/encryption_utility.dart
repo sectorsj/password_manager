@@ -1,21 +1,14 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart';
-import 'package:dotenv/dotenv.dart';
 
 class EncryptionUtility {
   static const int _ivLength = 12;
   final Key _key;
 
   // Основной конструктор (использует .env)
-  EncryptionUtility(DotEnv env) : _key = _loadKey(env);
+  EncryptionUtility(Map<String, String> env) : _key = _loadKey(env);
 
-  /// Фабрика из .env
-  /// Используется на сервере
-  factory EncryptionUtility.fromEnv() {
-    final env = DotEnv()..load(); // Загружает .env автоматически
-    return EncryptionUtility(env);
-  }
 
   // Фабричный метод — создаёт EncryptionUtility из base64 AES ключа
   factory EncryptionUtility.fromBase64Key(String keyBase64) {
@@ -30,7 +23,7 @@ class EncryptionUtility {
   EncryptionUtility._internal(this._key);
 
   // Загрузка ключа из .env
-  static Key _loadKey(DotEnv env) {
+  static Key _loadKey(Map<String, String> env) {
     final keyBase64 = env['APP_AES_KEY'];
     if (keyBase64 == null || keyBase64.isEmpty) {
       throw Exception('APP_AES_KEY не найден в .env');

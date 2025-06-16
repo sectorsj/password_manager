@@ -1,14 +1,26 @@
-import 'package:dotenv/dotenv.dart' show DotEnv, load;
+import 'dart:io';
+import 'package:dotenv/dotenv.dart';
 import 'package:password_manager_server/db/connection_to_db.dart';
 import 'package:password_manager_server/router.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
-void main() async {
-  final dotenv = DotEnv()..load();
-  final connection = await createConnection(dotenv);
-  final handler = buildHandler(connection, dotenv);
+Future<void> main() async {
+  final DotEnv dotEnv = DotEnv();
+  if (File('.env').existsSync()) {
+    dotEnv.load();
+    print('📄 .env загружен');
+  }
 
-  final server = await shelf_io.serve(handler, 'localhost', 8080);
-  print(
-      'Сервер запущен по адресу: http://${server.address.host}:${server.port}');
+  // Приводим к типу Map<String, String> вручную
+  final env = <String, String>{
+    ...Platform.environment,
+    ...dotEnv.map.map((key, value) => MapEntry(key.toString(), value.toString())),
+  };
+
+  final connection = await createConnection(env);
+  final handler = buildHandler(connection, env);
+
+  final port = int.parse(env['PORT'] ?? '8080');
+  final server = await shelf_io.serve(handler, '0.0.0.0', port);
+  print('🚀 Сервер запущен на http://${server.address.host}:${server.port}');
 }
