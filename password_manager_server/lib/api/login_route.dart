@@ -4,14 +4,14 @@ import 'package:hashing_utility_package/encryption_utility.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:postgres/postgres.dart';
-import 'package:dotenv/dotenv.dart' show DotEnv;
+
 import 'package:password_manager_server/utils/hash_parser.dart';
 import 'package:hashing_utility_package/hashing_utility.dart';
 
 class LoginRoute {
   final Connection connection;
   final EncryptionUtility encryption;
-  final DotEnv env;
+  final Map<String, String> env;
 
   LoginRoute(this.connection, this.env) : encryption = EncryptionUtility(env);
 

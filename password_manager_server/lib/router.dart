@@ -12,7 +12,7 @@ import 'api/email_routes.dart';
 import 'api/website_routes.dart';
 import 'api/network_connection_routes.dart';
 
-Handler buildHandler(Connection connection, DotEnv env) {
+Handler buildHandler(Connection connection, Map<String, String> env) {
   final router = Router()
     ..mount('/login', LoginRoute(connection, env).router)
     ..mount('/register', RegisterRoute(connection, env).router)

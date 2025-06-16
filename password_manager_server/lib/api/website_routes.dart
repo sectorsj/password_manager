@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:dotenv/dotenv.dart';
 import 'package:hashing_utility_package/encryption_utility.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
@@ -9,8 +8,9 @@ import 'package:shelf_router/shelf_router.dart';
 class WebsiteRoutes {
   final Connection connection;
   final EncryptionUtility encryption;
+  final Map<String, String> env;
 
-  WebsiteRoutes(this.connection, DotEnv env)
+  WebsiteRoutes(this.connection, this.env)
       : encryption = EncryptionUtility(env);
 
   Router get router {

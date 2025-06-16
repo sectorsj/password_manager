@@ -1,0 +1,24 @@
+services:
+  password-server:
+    build:
+      context: .
+      dockerfile: password_manager_server/Dockerfile
+    container_name: password_server
+    ports:
+      - "${SERVER_PORT}:8080"
+    environment:
+      - PORT=${SERVER_PORT}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - APP_AES_KEY=${APP_AES_KEY}
+    restart: unless-stopped
+    volumes:
+      - ./.env:/app/.env:ro  # Монтируем .env в правильное место
+    # extra_hosts:
+    #  - "192.168.0.245"
+
+volumes:
+  postgres-data:
