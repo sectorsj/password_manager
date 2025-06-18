@@ -13,6 +13,7 @@ COPY password_manager_server/. .
 COPY common ../common
 
 RUN dart pub get
+RUN apt-get update && apt-get install -y bash
 RUN dart compile exe bin/server.dart -o bin/server
 
 # Финальный минимальный контейнер
