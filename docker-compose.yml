@@ -18,7 +18,7 @@ services:
     volumes:
       - ./.env:/app/.env:ro  # Монтируем .env в правильное место
     extra_hosts:
-      - "host.docker.internal"
+      - "host.docker.internal:192.168.0.245"
 
 volumes:
   postgres-data:

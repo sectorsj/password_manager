@@ -5,9 +5,6 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:postgres/postgres.dart';
 
-import 'package:password_manager_server/utils/hash_parser.dart';
-import 'package:hashing_utility_package/hashing_utility.dart';
-
 class LoginRoute {
   final Connection connection;
   final EncryptionUtility encryption;
@@ -56,14 +53,6 @@ class LoginRoute {
 
       if (result.isEmpty) {
         print('Пользователь с логином "$accountLogin" не найден в БД');
-
-        // (ОТЛАДКА) Проверяем, какие логины есть в БД
-        // final allAccounts = await connectionть
-        //     .execute('SELECT account_login FROM accounts LIMIT 10');
-        // print('Существующие логины в БД:');
-        // for (final account in allAccounts) {
-        //   print('  - "${account.toColumnMap()['account_login']}"');
-        // }
 
         return Response.forbidden(
           jsonEncode({'error': 'Неверное имя пользователя или пароль'}),
