@@ -5,7 +5,12 @@ import 'package:password_manager_frontend/utils/config.dart';
 class BaseService {
   final String _baseUrl = baseUrl;
 
-  Uri buildUri(String endpoint) => Uri.parse('$_baseUrl$endpoint');
+  Uri buildUri(String endpoint) {
+    final rawUrl = '$_baseUrl$endpoint';
+    print('🔧 Сборка URI: $rawUrl');
+    print('⚠️ baseUrl = "$_baseUrl"');
+    return Uri.parse(rawUrl);
+  }
 
   Future<dynamic> get(String endpoint) async {
     final response = await http.get(buildUri(endpoint));
