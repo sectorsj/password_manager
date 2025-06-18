@@ -44,9 +44,9 @@ class HomePage extends StatelessWidget {
           ],
           bottom: const TabBar(
             tabs: [
-              Tab(text: 'Emails'),
-              Tab(text: 'Network Connections'),
-              Tab(text: 'Websites'),
+              Tab(text: 'Электронные почты'),
+              Tab(text: 'Сетевые подключения'),
+              Tab(text: 'Сайты'),
             ],
           ),
         ),
