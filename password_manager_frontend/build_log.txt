@@ -1,12 +1,12 @@
---- Начало сборки: 16.06.2025 14:54:26 --- 
+--- Начало сборки: 18.06.2025  8:51:48 --- 
 --- flutter clean --- 
-Deleting build...                                                   33ms
-Deleting .dart_tool...                                               9ms
+Deleting build...                                                  320ms
+Deleting .dart_tool...                                              18ms
 Deleting Generated.xcconfig...                                       0ms
 Deleting flutter_export_environment.sh...                            0ms
+Deleting ephemeral...                                                1ms
 Deleting ephemeral...                                                0ms
-Deleting ephemeral...                                                0ms
-Deleting ephemeral...                                               25ms
+Deleting ephemeral...                                               13ms
 Deleting .flutter-plugins-dependencies...                            0ms
 Deleting .flutter-plugins...                                         0ms
 --- flutter pub get --- 
@@ -17,7 +17,7 @@ Downloading packages...
   asn1lib 1.5.8 (1.6.4 available)
   async 2.11.0 (2.13.0 available)
   boolean_selector 2.1.1 (2.1.2 available)
-  build 2.4.1 (2.4.2 available)
+  build 2.4.1 (2.5.1 available)
   characters 1.3.0 (1.4.0 available)
   clock 1.1.1 (1.1.2 available)
   collection 1.18.0 (1.19.1 available)
@@ -60,6 +60,6 @@ Got dependencies!
 Try `flutter pub outdated` for more information.
 --- flutter build windows --- 
 
-Building Windows application...                                    74,0s
+Building Windows application...                                    97,5s
 √ Built build\windows\x64\runner\Release\password_manager_frontend.exe
---- УСПЕШНАЯ СБОРКА: 16.06.2025 14:54:26 --- 
+--- УСПЕШНАЯ СБОРКА: 18.06.2025  8:51:48 --- 
