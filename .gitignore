@@ -155,5 +155,4 @@ common/utility/analysis_options.yaml
 password_manager_frontend/analysis_options.yaml
 .swift
 .env
-build_log.txt
-
+password_manager_frontend/build_log.txt
