@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/services/login_service.dart';
 import 'package:password_manager_frontend/services/account_service.dart';
-import 'package:password_manager_frontend/models/account.dart'; // Убедись, что это путь к модели
 import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/services/user_service.dart';
 import 'package:password_manager_frontend/utils/ui_routes.dart';
@@ -18,11 +17,76 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
+
   final _accountLoginController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  // final _secretPhraseController = TextEditingController();
+
   bool _isLoading = false;
   final _loginService = LoginService();
   final _secureStorage = const FlutterSecureStorage();
+
+  Future<void> _submitLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _loginService.login(
+        accountLogin: _accountLoginController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      print('DEBUG login result: $result');
+
+      final rawAccountId = result['account_id'];
+      final rawUserId = result['user_id'];
+      final jwtToken = result['jwt_token'];
+
+      if (rawAccountId == null || rawUserId == null || jwtToken == null) {
+        throw Exception(
+            'account_id, user_id или jwt_token отсутствуют в ответе сервера');
+      }
+
+      final accountId = rawAccountId is int
+          ? rawAccountId
+          : int.tryParse(rawAccountId.toString());
+      final userId =
+          rawUserId is int ? rawUserId : int.tryParse(rawUserId.toString());
+
+      if (accountId == null || userId == null) {
+        throw Exception(
+            'account_id или user_id не удалось преобразовать в int');
+      }
+
+      // Устанавливаем сессию с данными из JWT
+      await Provider.of<AuthService>(context, listen: false)
+          .setSessionFromToken(jwtToken);
+
+      // Сохраняем JWT токен и AES-ключ в secure storage
+      await _secureStorage.write(key: 'jwt_token', value: jwtToken);
+
+      // Загружаем данные аккаунта и пользователя
+      final account = await AccountService().fetchAccountById(accountId);
+      final user = await UserService().fetchUserById(userId);
+
+      // Навигация на главную страницу
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (_) => HomePage(account: account, user: user),
+        ),
+        (route) => false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка входа: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,84 +115,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _isLoading
-                    ? null
-                    : () async {
-                        if (_formKey.currentState!.validate()) {
-                          setState(() => _isLoading = true);
-                          try {
-                            final result = await _loginService.login(
-                              accountLogin: _accountLoginController.text.trim(),
-                              password: _passwordController.text.trim(),
-                            );
-                            print('DEBUG result: $result');
-
-                            final rawAccountId = result['account_id'];
-                            final rawUserId = result['user_id'];
-                            final aesKey = result['aes_key'];
-
-                            if (rawAccountId == null || rawUserId == null) {
-                              throw Exception(
-                                  'account_id или user_id отсутствуют в ответе сервера');
-                            }
-
-                            final accountId = rawAccountId is int
-                                ? rawAccountId
-                                : int.tryParse(rawAccountId.toString());
-                            final userId = rawUserId is int
-                                ? rawUserId
-                                : int.tryParse(rawUserId.toString());
-
-                            if (accountId == null || userId == null) {
-                              throw Exception(
-                                  'account_id или user_id не удалось преобразовать в int');
-                            }
-
-                            // Сохраняем сессию
-                            await authService.setSession(
-                              accountId: accountId,
-                              userId: userId,
-                            );
-
-                            // Сохраняем AES-ключ в secure storage
-                            if (aesKey != null &&
-                                aesKey is String &&
-                                aesKey.isNotEmpty) {
-                              await _secureStorage.write(
-                                  key: 'aes_key', value: aesKey);
-                            } else {
-                              throw Exception('AES ключ не получен от сервера');
-                            }
-
-                            // Загружаем данные аккаунта и пользователя
-                            final account = await AccountService()
-                                .fetchAccountById(accountId);
-                            final user =
-                                await UserService().fetchUserById(userId);
-
-                            print(
-                                "DEBUG Account (после fetch): ${account.toJson()}");
-
-                            if (!mounted) return;
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => HomePage(
-                                  account: account,
-                                  user: user,
-                                ),
-                              ),
-                              (route) => false,
-                            );
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Ошибка входа: $e')),
-                            );
-                          } finally {
-                            setState(() => _isLoading = false);
-                          }
-                        }
-                      },
+                onPressed: _isLoading ? null : _submitLogin,
                 child: _isLoading
                     ? const CircularProgressIndicator()
                     : const Text('Войти'),

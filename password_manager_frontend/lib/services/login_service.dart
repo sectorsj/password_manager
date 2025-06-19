@@ -15,6 +15,10 @@ class LoginService extends BaseService {
     });
     print('DEBUG login response: $response');
 
-    return response;
+    if (response is Map<String, dynamic>) {
+      return response;
+    } else {
+      throw Exception('Некорректный ответ от сервера');
+    }
   }
 }

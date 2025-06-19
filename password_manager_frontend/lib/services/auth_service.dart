@@ -5,12 +5,10 @@ import 'package:password_manager_frontend/models/user.dart';
 import 'package:password_manager_frontend/services/account_service.dart';
 import 'package:password_manager_frontend/services/user_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jwt_decode/jwt_decode.dart';
 
 /// AuthService
-///  Хранит accountId и userId.
-///  Отвечает за setSession(), logout(), isLoggedIn().
-///  Работает как провайдер состояния.
-
+/// Отвечает за авторизацию и хранение сессии пользователя.
 class AuthService extends ChangeNotifier {
   int _accountId = 0;
   int _userId = 0;
@@ -32,11 +30,46 @@ class AuthService extends ChangeNotifier {
 
   User? get user => _user;
 
+  bool get isLoggedIn => _accountId != 0 && _userId != 0;
+
   void setCategoryId(int id) {
     _categoryId = id;
     notifyListeners();
   }
 
+  /// Устанавливает сессию из JWT токена
+  Future<void> setSessionFromToken(String jwtToken) async {
+    try {
+      final payload = Jwt.parseJwt(jwtToken); // Парсим JWT
+
+      // Извлекаем accountId и userId
+      _accountId = int.parse(payload['account_id'].toString());
+      _userId = int.parse(payload['user_id'].toString());
+      _categoryId = 0;
+
+      // Извлекаем aesKey
+      final aesKey = payload['aes_key'];
+      if (aesKey is String) {
+        await SecureStorageHelper.setAesKey(
+            aesKey); // Сохраняем aesKey в SecureStorage
+      }
+
+      // Загружаем дополнительные данные пользователя
+      _account = await _accountService.fetchAccountById(_accountId);
+      _user = await _userService.fetchUserById(_userId);
+
+      // Сохраняем JWT в SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('jwt_token', jwtToken);
+
+      notifyListeners();
+    } catch (e) {
+      print('Ошибка при установке сессии из токена: $e');
+      rethrow;
+    }
+  }
+
+  /// Устанавливает сессию вручную
   Future<void> setSession({required int accountId, required int userId}) async {
     if (accountId == 0 || userId == 0) {
       print('ОШИБКА: accountId или userId равны 0');
@@ -46,31 +79,35 @@ class AuthService extends ChangeNotifier {
     _userId = userId;
     _categoryId = 0;
 
-    // Загружаем дополнительные данные
+    // Загружаем данные
     _account = await _accountService.fetchAccountById(accountId);
     _user = await _userService.fetchUserById(userId);
 
     notifyListeners();
   }
 
-  void clearSession() {
+  /// Очищаем текущую сессию
+  Future<void> clearSession() async {
     _accountId = 0;
     _userId = 0;
     _account = null;
     _user = null;
+
     notifyListeners();
   }
 
+  /// Очищаем текущую сессию
   Future<void> logout() async {
     _accountId = 0;
     _userId = 0;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('account_id');
-    await prefs.remove('user_id');
-    // Удаление AES ключа
-    await SecureStorageHelper.deleteAesKey(); // ← удаляем AES-ключ
-  }
+    _categoryId = 0;
+    _account = null;
+    _user = null;
 
-  bool get isLoggedIn => accountId != 0 && _userId != 0;
+    notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('jwt_token');
+    await SecureStorageHelper.deleteAesKey();
+  }
 }

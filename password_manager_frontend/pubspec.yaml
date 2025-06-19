@@ -36,6 +36,7 @@ dependencies:
   provider: ^6.1.2
   hashing_utility_package:
     path: ../common/utility
+  jwt_decode: ^0.3.0  # Последняя версия на момент написания
 
 dev_dependencies:
   flutter_test:

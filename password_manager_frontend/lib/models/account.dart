@@ -6,12 +6,14 @@ class Account {
   final String accountLogin;
   final String accountEmail;
   final String encryptedPassword;
+  final String? aesKey;
 
   Account({
     required this.id,
     required this.accountLogin,
     required this.accountEmail,
     required this.encryptedPassword,
+    this.aesKey,
   });
 
   factory Account.fromJson(Map<String, dynamic> json) {
@@ -22,6 +24,7 @@ class Account {
       accountLogin: json['account_login'] ?? '',
       accountEmail: json['account_email'] ?? '',
       encryptedPassword: json['encrypted_password'] ?? '',
+      aesKey: json['aes_key'],
     );
   }
 
@@ -30,5 +33,6 @@ class Account {
         'account_login': accountLogin,
         'account_email': accountEmail,
         'encrypted_password': encryptedPassword,
+        if (aesKey != null) 'aes_key': aesKey,
       };
 }
