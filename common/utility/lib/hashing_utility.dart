@@ -26,7 +26,7 @@ class HashingUtility {
 
   /// Генерация AES ключа из секретной фразы с использованием PBKDF2
   static Future<Uint8List> deriveAesKeyFromSecret(String secretPhrase) async {
-    final salt = generateSalt(); // Генерируем соль
+    final salt = generateSalt(); // Генерация соли
     final aesKey = await _generatePBKDF2Hash(secretPhrase, salt);
     return aesKey;
   }

@@ -1,10 +1,8 @@
 import 'dart:convert';
 
-import 'package:hashing_utility_package/jwt_util.dart';
 import 'package:shelf/shelf.dart';
-import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
-import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:logging/logging.dart';
+import 'jwt_util.dart';
 
 final _logger = Logger('JWTMiddleware');
 

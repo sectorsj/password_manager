@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:hashing_utility_package/encryption_utility.dart';
+import 'package:common_utility_package/encryption_utility.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
