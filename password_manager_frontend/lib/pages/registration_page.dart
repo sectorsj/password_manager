@@ -12,6 +12,9 @@ import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/utils/ui_routes.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:logging/logging.dart';
+
+// final _logger = Logger('RegisterRoute');
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({Key? key}) : super(key: key);
@@ -45,6 +48,19 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
       // Генерация AES ключа на основе секретной фразы
       final aesKey = await HashingUtility.deriveAesKeyFromSecret(secretPhrase);
+
+      print('Debug: accountLogin=${_accountLoginController.text.trim()}');
+      print('Debug: emailAddress=${_emailAddressController.text.trim()}');
+      print('Debug: password=${_passwordController.text.trim()}');
+      print('Debug: secretphrase=$secretPhrase');
+      print('Debug: aesKey=$aesKey');
+
+      // Проверка, что все поля заполнены
+      if (_accountLoginController.text.trim().isEmpty ||
+          _emailAddressController.text.trim().isEmpty ||
+          _passwordController.text.trim().isEmpty) {
+        throw Exception('Логин, email и пароль обязательны для регистрации');
+      }
 
       final result = await _registrationService.register(
         accountLogin: _accountLoginController.text.trim(),

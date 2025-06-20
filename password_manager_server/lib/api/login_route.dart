@@ -4,6 +4,9 @@ import 'package:hashing_utility_package/encryption_utility.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:postgres/postgres.dart';
+import 'package:logging/logging.dart';
+
+final _logger = Logger('LoginRoute');
 
 class LoginRoute {
   final Connection connection;
@@ -34,15 +37,16 @@ class LoginRoute {
         );
       }
 
-      print('Попытка входа с логином: $accountLogin');
+      _logger.info('Попытка входа с логином: $accountLogin');
 
-      // SQL запрос - добавляем получение user_id
+      // SQL запрос - добавляем получение user_id и aes_key
       final result = await connection.execute(
         Sql.named('''
         SELECT 
           a.id AS account_id, 
           a.account_email, 
           a.encrypted_password,
+          a.aes_key,
           u.id as user_id
         FROM accounts a
         LEFT JOIN users u ON a.id = u.account_id
@@ -52,7 +56,8 @@ class LoginRoute {
       );
 
       if (result.isEmpty) {
-        print('Пользователь с логином "$accountLogin" не найден в БД');
+        _logger
+            .warning('Пользователь с логином "$accountLogin" не найден в БД');
 
         return Response.forbidden(
           jsonEncode({'error': 'Неверное имя пользователя или пароль'}),
@@ -66,33 +71,36 @@ class LoginRoute {
       final decryptedStored = encryption.decryptText(encryptedStored);
 
       // ЛОГИРУЕМ перед сравнением
-      print('Пароль, введённый пользователем: $password');
-      print('Зашифрованный пароль из БД:     $encryptedStored');
-      print('Расшифрованный введённый пароль: $decryptedStored');
+      _logger.fine('Пароль, введённый пользователем: $password');
+      _logger.fine('Зашифрованный пароль из БД:     $encryptedStored');
+      _logger.fine('Расшифрованный введённый пароль: $decryptedStored');
 
       if (decryptedStored != password) {
-        print('Пароль не совпадает для логина:: $accountLogin');
+        _logger.warning('Пароль не совпадает для логина: $accountLogin');
         return Response.forbidden(
           jsonEncode({'error': 'Неверное имя пользователя или пароль'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
 
-      print('Вход выполнен: $accountLogin');
+      _logger.info('Вход выполнен для логина: $accountLogin');
 
+      // Возвращаем успешный ответ с данными
       // ИСПРАВЛЕННЫЙ ответ - добавляем userId с проверкой на null
       return Response.ok(
         jsonEncode({
           'message': 'Авторизация прошла успешно',
           'account_id': row['account_id'] ?? 0,
-          'user_id': row['user_id'] ?? 0, // Добавляем userId
+          'user_id': row['user_id'] ?? 0,
+          // Добавляем userId
           'account_email': row['account_email'] ?? '',
-          'aes_key': env['APP_AES_KEY'],
+          'aes_key': row['aes_key'] ?? '',
+          // Возвращаем aes_key для пользователя
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e, stack) {
-      print('Ошибка при логине: $e$stack');
+      _logger.severe('Ошибка при логине: $e\n$stack');
       return Response.internalServerError(
         body: jsonEncode({'error': 'Ошибка сервера при авторизации'}),
         headers: {'Content-Type': 'application/json'},
