@@ -1,5 +1,5 @@
+import 'package:common_utility_package/secure_storage_helper.dart';
 import 'package:flutter/material.dart';
-import 'package:hashing_utility_package/secure_storage_helper.dart';
 import 'package:password_manager_frontend/models/account.dart';
 import 'package:password_manager_frontend/models/user.dart';
 import 'package:password_manager_frontend/services/account_service.dart';

@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:hashing_utility_package/hashing_utility.dart';
-import 'package:hashing_utility_package/secure_storage_helper.dart';
+import 'package:common_utility_package/hashing_utility.dart';
+import 'package:common_utility_package/secure_storage_helper.dart';
 import 'package:jwt_decode/jwt_decode.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/services/registration_service.dart';

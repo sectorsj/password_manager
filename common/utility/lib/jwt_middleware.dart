@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:hashing_utility_package/jwt_util.dart';
+import 'package:common_utility_package/jwt_util.dart';
 import 'package:shelf/shelf.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;

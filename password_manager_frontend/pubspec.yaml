@@ -34,7 +34,7 @@ dependencies:
   http: ^1.2.2
   cupertino_icons: ^1.0.8
   provider: ^6.1.2
-  hashing_utility_package:
+  common_utility_package:
     path: ../common/utility
   jwt_decode: ^0.3.0  # Последняя версия на момент написания
 

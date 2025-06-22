@@ -1,14 +1,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:encrypt/encrypt.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 
 class EncryptionUtility {
   static const int _ivLength = 12;
-  final Key _key;
+  final encrypt.Key _key;
 
-  // Основной конструктор (использует .env)
+  // Конструктор для создания из .env
   EncryptionUtility(Map<String, String> env) : _key = _loadKey(env);
-
 
   // Фабричный метод — создаёт EncryptionUtility из base64 AES ключа
   factory EncryptionUtility.fromBase64Key(String keyBase64) {
@@ -16,14 +15,14 @@ class EncryptionUtility {
     if (keyBytes.length != 32) {
       throw Exception('AES ключ должен быть 256-битным (32 байта)');
     }
-    return EncryptionUtility._internal(Key(keyBytes));
+    return EncryptionUtility._internal(encrypt.Key(keyBytes));
   }
 
   // Приватный внутренний конструктор
   EncryptionUtility._internal(this._key);
 
   // Загрузка ключа из .env
-  static Key _loadKey(Map<String, String> env) {
+  static encrypt.Key _loadKey(Map<String, String> env) {
     final keyBase64 = env['APP_AES_KEY'];
     if (keyBase64 == null || keyBase64.isEmpty) {
       throw Exception('APP_AES_KEY не найден в .env');
@@ -34,7 +33,7 @@ class EncryptionUtility {
       if (keyBytes.length != 32) {
         throw Exception('APP_AES_KEY должен быть длиной 256 бит (32 байта)');
       }
-      return Key(keyBytes);
+      return encrypt.Key(keyBytes);
     } catch (e) {
       throw Exception('Ошибка при декодировании APP_AES_KEY: $e');
     }
@@ -42,10 +41,8 @@ class EncryptionUtility {
 
   /// Шифрует строку и возвращает base64(IV + encrypted)
   String encryptText(String plainText) {
-    final iv = IV.fromSecureRandom(_ivLength);
-    final encrypter = Encrypter(
-      AES(_key, mode: AESMode.gcm),
-    );
+    final iv = encrypt.IV.fromSecureRandom(_ivLength);
+    final encrypter = encrypt.Encrypter(encrypt.AES(_key));
 
     final encrypted = encrypter.encrypt(plainText, iv: iv);
     final combined = Uint8List(_ivLength + encrypted.bytes.length);
@@ -64,13 +61,11 @@ class EncryptionUtility {
       throw ArgumentError('Недопустимая длина зашифрованных данных');
     }
 
-    final iv = IV(combined.sublist(0, _ivLength));
+    final iv = encrypt.IV(combined.sublist(0, _ivLength));
     final encryptedBytes = combined.sublist(_ivLength);
 
-    final encrypter = Encrypter(
-      AES(_key, mode: AESMode.gcm),
-    );
+    final encrypter = encrypt.Encrypter(encrypt.AES(_key));
 
-    return encrypter.decrypt(Encrypted(encryptedBytes), iv: iv);
+    return encrypter.decrypt(encrypt.Encrypted(encryptedBytes), iv: iv);
   }
 }

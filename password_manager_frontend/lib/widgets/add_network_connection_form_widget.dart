@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:hashing_utility_package/encryption_utility.dart';
+import 'package:common_utility_package/encryption_utility.dart';
 import 'package:password_manager_frontend/models/network_connection.dart';
 import 'package:password_manager_frontend/services/network_connection_service.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
