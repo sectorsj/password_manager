@@ -13,8 +13,11 @@ dependencies:
   shelf_cors_headers: ^0.1.5
   postgres: ^3.4.0
   dotenv: ^4.2.0  # Для загрузки переменных окружения
+<<<<<<< HEAD
   pointycastle: ^3.4.0  # Для криптографических операций (аналог для шифрования)
   encrypt: ^5.0.1  # Шифрование в Dart
+=======
+>>>>>>> temp_kali_changes_1
   common_utility_package:
     path: ../common/utility
   logger: ^1.3.1

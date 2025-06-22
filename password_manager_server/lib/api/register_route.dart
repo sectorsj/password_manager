@@ -1,11 +1,11 @@
 import 'dart:convert';
 
-import 'package:hashing_utility_package/encryption_utility.dart';
+import 'package:common_utility_package/encryption_utility.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:logging/logging.dart';
-import 'package:hashing_utility_package/hashing_utility.dart';
+import 'package:common_utility_package/hashing_utility.dart';
 
 final _logger = Logger('RegisterRoute');
 
@@ -42,7 +42,8 @@ class RegisterRoute {
           'accountLogin=$accountLogin,'
           'emailAddress=$emailAddress,'
           'userName=$userName,'
-          'userPhone=$userPhone');
+          'userPhone=$userPhone',
+          'secretPhrase=${secretPhrase.isNotEmpty}');
 
       // Проверяем, что обязательные поля не пустые
       if ([accountLogin, emailAddress, password, secretPhrase]
@@ -60,8 +61,14 @@ class RegisterRoute {
 
       // Шифрование пароля с использованием AES ключа
       final encryptedPassword = encryption.encryptText(password);
-
       _logger.fine('Пароль зашифрован для пользователя $accountLogin');
+
+
+      // Логируем параметры перед выполнением SQL запроса
+      _logger.fine('Подготовка к запросу в БД: '
+          'accountLogin=$accountLogin, '
+          'emailAddress=$emailAddress, '
+          'aesKey=${HashingUtility.toBase64(aesKey)}');
 
       // Выполняем запрос на регистрацию
       final result = await connection.execute(
@@ -79,7 +86,7 @@ class RegisterRoute {
           'accountLogin': accountLogin,
           'emailAddress': emailAddress,
           'password': encryptedPassword,
-          'aesKey': aesKey,
+          'aesKey': HashingUtility.toBase64(aesKey),
           'userName': userName,
           'userPhone': userPhone,
           'userDescription': userDescription,

@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hashing_utility_package/encryption_utility.dart';
+import 'package:common_utility_package/encryption_utility.dart';
 
 void main() {
   print('Working dir: ${Directory.current.path}');
