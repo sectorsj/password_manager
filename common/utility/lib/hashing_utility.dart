@@ -9,7 +9,7 @@ import 'package:pointycastle/pointycastle.dart';
 class HashingUtility {
   static const int PBKDF2_ITERATIONS = 100000; // Количество итераций
   static const int AES_KEY_LENGTH =
-  32; // Длина AES ключа в байтах (256-битный ключ)
+      32; // Длина AES ключа в байтах (256-битный ключ)
   static const int SALT_BYTES = 16; // Размер соли (16 байтов)
 
   HashingUtility._(); // Приватный конструктор
@@ -29,7 +29,7 @@ class HashingUtility {
   static Uint8List generateDeterministicSalt(String secretPhrase) {
     final sha256 = SHA256Digest();
     final inputBytes =
-    Uint8List.fromList(utf8.encode(secretPhrase + 'salt_suffix'));
+        Uint8List.fromList(utf8.encode(secretPhrase + 'salt_suffix'));
     final hash = sha256.process(inputBytes);
     // Используем первые 16 байтов хэша как соль
     return Uint8List.fromList(hash.sublist(0, SALT_BYTES));
@@ -39,7 +39,7 @@ class HashingUtility {
   /// Теперь использует детерминированную соль для повторяемости
   static Future<Uint8List> deriveAesKeyFromSecret(String secretPhrase) async {
     final salt =
-    generateDeterministicSalt(secretPhrase); // Детерминированная соль
+        generateDeterministicSalt(secretPhrase); // Детерминированная соль
     final aesKey = await _generatePBKDF2Hash(secretPhrase, salt);
     return aesKey;
   }

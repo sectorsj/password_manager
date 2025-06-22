@@ -1,20 +1,12 @@
-import 'dart:convert';
-
-import 'package:flutter/material.dart';
-import 'package:common_utility_package/hashing_utility.dart';
 import 'package:common_utility_package/secure_storage_helper.dart';
-import 'package:jwt_decode/jwt_decode.dart';
+import 'package:flutter/material.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/services/registration_service.dart';
-import 'package:password_manager_frontend/services/account_service.dart';
-import 'package:password_manager_frontend/services/user_service.dart';
-import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/utils/ui_routes.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:logging/logging.dart';
+import 'package:logging/logging.dart';
 
-// final _logger = Logger('RegisterRoute');
+final _logger = Logger('RegistrationPage');
 
 class RegistrationPage extends StatefulWidget {
   const RegistrationPage({Key? key}) : super(key: key);
@@ -44,24 +36,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     setState(() => _isLoading = true);
 
     try {
-      final secretPhrase = _secretPhraseController.text.trim();
-
-      // Генерация AES ключа на основе секретной фразы
-      final aesKey = await HashingUtility.deriveAesKeyFromSecret(secretPhrase);
-
-      print('Debug: accountLogin=${_accountLoginController.text.trim()}');
-      print('Debug: emailAddress=${_emailAddressController.text.trim()}');
-      print('Debug: password=${_passwordController.text.trim()}');
-      print('Debug: secretphrase=$secretPhrase');
-      print('Debug: aesKey=$aesKey');
-
-      // Проверка, что все поля заполнены
-      if (_accountLoginController.text.trim().isEmpty ||
-          _emailAddressController.text.trim().isEmpty ||
-          _passwordController.text.trim().isEmpty) {
-        throw Exception('Логин, email и пароль обязательны для регистрации');
-      }
-
+      // Отправка данных на сервер
       final result = await _registrationService.register(
         accountLogin: _accountLoginController.text.trim(),
         emailAddress: _emailAddressController.text.trim(),
@@ -69,77 +44,54 @@ class _RegistrationPageState extends State<RegistrationPage> {
         userName: _userNameController.text.trim(),
         userPhone: _phoneController.text.trim(),
         userDescription: _descriptionController.text.trim(),
-        aesKeyBase64: HashingUtility.toBase64(aesKey),
+        secretPhrase: _secretPhraseController.text.trim(),
       );
 
       final accountId = result['account_id'];
       final userId = result['user_id'];
+      // final categoryId = result['category_id'];
+      final jwtToken = result['jwt_token'];
+      final aesKey = result['aes_key'];
 
-      if (accountId == null || userId == null) {
+      _logger.info(
+          'Получены данные при регистрации:', 'Account ID: $accountId');
+      _logger.info('Получены данные при регистрации:', 'Account ID: $userId');
+      _logger.info('Получены данные при регистрации:', 'Account ID: $aesKey');
+      print(
+          "Отправляемая секретная фраза: ${_secretPhraseController.text.trim()}");
+
+      if (accountId == null || userId == null || jwtToken == null) {
         throw Exception('Отсутствуют необходимые данные в ответе сервера');
       }
 
-      // Сохраняем AES-ключ в безопасное хранилище
-      await SecureStorageHelper.setAesKey(HashingUtility.toBase64(aesKey));
-
-      // Устанавливаем сессию
-      await setSession(accountId: accountId, userId: userId);
-
-      final account = await AccountService().fetchAccountById(accountId);
-      final user = await UserService().fetchUserById(userId);
-
-      if (!mounted) return;
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => HomePage(account: account, user: user),
-        ),
-        (route) => false,
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Ошибка регистрации: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  // Метод для установки сессии с данными accountId и userId
-  Future<void> setSession({required int accountId, required int userId}) async {
-    if (accountId == 0 || userId == 0) {
-      print('ОШИБКА: accountId или userId равны 0');
-      throw Exception('Неверные данные: accountId=$accountId, userId=$userId');
-    }
-
-    final authService = Provider.of<AuthService>(context, listen: false);
-    await authService.setSession(accountId: accountId, userId: userId);
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('account_id', accountId);
-    await prefs.setInt('user_id', userId);
-  }
-
-  // Метод для установки сессии из JWT токена
-  Future<void> setSessionFromToken(String jwtToken) async {
-    try {
-      final payload = Jwt.parseJwt(jwtToken); // Парсим JWT
-
-      // Извлекаем accountId и userId
-      final accountId = int.parse(payload['account_id'].toString());
-      final userId = int.parse(payload['user_id'].toString());
-      final aesKey = payload['aes_key'];
-
-      if (aesKey is String) {
-        await SecureStorageHelper.setAesKey(
-            aesKey); // Сохраняем aesKey в SecureStorage
+      // await SecureStorageHelper.setAesKey(aesKey);
+      // Сохраняем AES ключ в безопасном хранилище
+      if (aesKey != null) {
+        try {
+          await SecureStorageHelper.setAesKey(aesKey);
+          print("AES ключ успешно сохранен в безопасном хранилище");
+        } catch (e) {
+          print("Ошибка при сохранении AES ключа: $e");
+          // Не прерываем процесс регистрации из-за ошибки сохранения ключа
+        }
       }
 
-      // Устанавливаем сессию
-      await setSession(accountId: accountId, userId: userId);
+      await Provider.of<AuthService>(context, listen: false)
+          .setSessionFromToken(jwtToken);
+
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, UiRoutes.splash);
+      }
     } catch (e) {
-      print('Ошибка при установке сессии из токена: $e');
-      rethrow;
+      print("Ошибка регистрации: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Ошибка регистрации: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

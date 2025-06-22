@@ -32,11 +32,11 @@ class BaseService {
     try {
       final response = await http
           .post(
-        buildUri(endpoint),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      )
-          .timeout(const Duration(seconds: 10));
+            buildUri(endpoint),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 30));
       _handleErrors(response);
       return jsonDecode(response.body);
     } catch (e) {

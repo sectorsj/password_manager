@@ -1,8 +1,8 @@
+import 'package:common_utility_package/secure_storage_helper.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:common_utility_package/secure_storage_helper.dart';
 
 import 'secure_storage_helper_test.mocks.dart';
 
