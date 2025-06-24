@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=/home/sectorsj/flutter"
-export "FLUTTER_APPLICATION_PATH=/home/sectorsj/projects/password_manager/password_manager_frontend"
+export "FLUTTER_ROOT=K:\tools\flutter\3.24.0"
+export "FLUTTER_APPLICATION_PATH=D:\filesEvgeniy\projects\mycoding\flutter\password_manager\password_manager_frontend"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_BUILD_DIR=build"
 export "FLUTTER_BUILD_NAME=1.0.0"
