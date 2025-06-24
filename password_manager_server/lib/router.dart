@@ -14,8 +14,8 @@ import 'api/network_connection_routes.dart';
 
 Handler buildHandler(Connection connection, Map<String, String> env) {
   final router = Router()
-    ..mount('/login', LoginRoute(connection, env).router)
-    ..mount('/register', RegisterRoute(connection, env).router)
+    ..mount('/login', LoginRoute(connection).router)
+    ..mount('/register', RegisterRoute(connection).router)
     ..mount('/accounts', AccountRoutes(connection).router)
     ..mount('/users', UserRoutes(connection).router)
     ..mount('/emails', EmailRoutes(connection, env).router)

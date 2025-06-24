@@ -8,9 +8,9 @@ import 'package:shelf_router/shelf_router.dart';
 class EmailRoutes {
   final Connection connection;
   final EncryptionUtility encryption;
-  final Map<String, String> env;
 
-  EmailRoutes(this.connection, this.env) : encryption = EncryptionUtility(env);
+  EmailRoutes(this.connection, Map<String, String> env)
+      : encryption = EncryptionUtility.fromEnv(env);
 
   Router get router {
     final router = Router();

@@ -23,7 +23,7 @@ Middleware jwtMiddleware(String secretKey) {
       final token = authHeader.substring(7);
 
       try {
-        final jwt = JwtUtil.verifyToken(token);
+        final jwt = JwtUtil.verifyToken(token, secretKey);
 
         if (jwt == null || JwtUtil.isTokenExpired(jwt)) {
           _logger.warning('Неверный или просроченный токен');

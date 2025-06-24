@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'dart:convert';
 
 import 'package:common_utility_package/hashing_utility.dart';
+import 'package:common_utility_package/secure_storage_helper.dart';
 import 'package:password_manager_frontend/services/base_service.dart';
 
 /// RegistrationService
@@ -28,10 +29,13 @@ class RegistrationService extends BaseService {
       if (userDescription != null) 'user_description': userDescription,
     });
 
-    if (response is Map<String, dynamic>) {
-      return response;
+    if (response.statusCode == 200) {
+      final result = jsonDecode(response.body);
+      await SecureStorageHelper.setAesKey(result['aes_key']);
+      await SecureStorageHelper.setJwtToken(result['jwt_token']);
+      return result;
     } else {
-      throw Exception('Некорректный ответ сервера при регистрации');
+      throw Exception('Ошибка регистрации: ${response.body}');
     }
   }
 }

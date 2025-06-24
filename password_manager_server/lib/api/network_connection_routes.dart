@@ -10,10 +10,9 @@ import 'package:shelf_router/shelf_router.dart';
 class NetworkConnectionRoutes {
   final Connection connection;
   final EncryptionUtility encryption;
-  final Map<String, String> env;
 
-  NetworkConnectionRoutes(this.connection, this.env)
-      : encryption = EncryptionUtility(env);
+  NetworkConnectionRoutes(this.connection, Map<String, String> env)
+      : encryption = EncryptionUtility.fromEnv(env);
 
   Router get router {
     final router = Router();

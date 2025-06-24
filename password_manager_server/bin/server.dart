@@ -9,18 +9,26 @@ Future<void> main() async {
   if (File('.env').existsSync()) {
     dotEnv.load();
     print('📄 .env загружен');
+  } else {
+    print('❌ .env файл не найден');
+    return;
   }
 
   // Приводим к типу Map<String, String> вручную
   final env = <String, String>{
     ...Platform.environment,
-    ...dotEnv.map.map((key, value) => MapEntry(key.toString(), value.toString())),
+    ...dotEnv.map
+        .map((key, value) => MapEntry(key.toString(), value.toString())),
   };
 
-  final connection = await createConnection(env);
-  final handler = buildHandler(connection, env);
+  try {
+    final connection = await createConnection(env);
+    final handler = buildHandler(connection, env);
 
-  final port = int.parse(env['PORT'] ?? '8080');
-  final server = await shelf_io.serve(handler, '0.0.0.0', port);
-  print('🚀 Сервер запущен на https://${server.address.host}:${server.port}');
+    final port = int.parse(env['PORT'] ?? '8080');
+    final server = await shelf_io.serve(handler, '0.0.0.0', port);
+    print('🚀 Сервер запущен на https://${server.address.host}:${server.port}');
+  } catch (e) {
+    print('❌ Не удалось запустить сервер: $e');
+  }
 }

@@ -1,19 +1,17 @@
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 class JwtUtil {
-  static const _secretKey =
-      'super_secret_key'; // Лучше хранить в .env или другом безопасном месте
-
   /// Генерация JWT токена с заданной нагрузкой и временем жизни.
   static String generateToken(Map<String, dynamic> payload,
       {Duration expiresIn = const Duration(hours: 1),
       String? audience,
       String? issuer,
-      String? subject}) {
+      String? subject,
+      required String aesKey}) {
     // Добавляем время жизни в payload
     final expirationTime = DateTime.now().add(expiresIn).millisecondsSinceEpoch;
-    payload['exp'] =
-        expirationTime; // 'exp' — это стандартный параметр для срока действия токена
+    payload['exp'] = (expirationTime / 1000)
+        .floor(); // 'exp' — это стандартный параметр для срока действия токена
 
     if (audience != null) {
       payload['aud'] = audience; // audience claim
@@ -26,13 +24,13 @@ class JwtUtil {
     }
 
     final jwt = JWT(payload);
-    return jwt.sign(SecretKey(_secretKey));
+    return jwt.sign(SecretKey(aesKey));
   }
 
   /// Верификация JWT токена. Возвращает объект JWT или null, если токен не валиден.
-  static JWT? verifyToken(String token) {
+  static JWT? verifyToken(String token, String aesKey) {
     try {
-      final jwt = JWT.verify(token, SecretKey(_secretKey));
+      final jwt = JWT.verify(token, SecretKey(aesKey));
 
       // Проверяем, не истек ли срок действия токена
       final exp = jwt.payload['exp'];
@@ -60,9 +58,9 @@ class JwtUtil {
   /// Обновление (рефреш) токена.
   /// Генерирует новый токен с теми же данными, но с новым сроком действия.
   static String refreshToken(String oldToken,
-      {Duration expiresIn = const Duration(hours: 1)}) {
+      {Duration expiresIn = const Duration(hours: 1), required String aesKey}) {
     try {
-      final oldJwt = JWT.verify(oldToken, SecretKey(_secretKey));
+      final oldJwt = JWT.verify(oldToken, SecretKey(aesKey));
       final payload = Map<String, dynamic>.from(oldJwt.payload);
 
       // Добавляем время жизни в payload (новое время истечения)
@@ -72,7 +70,7 @@ class JwtUtil {
 
       // Генерируем новый токен с обновленным сроком действия
       final newJwt = JWT(payload);
-      return newJwt.sign(SecretKey(_secretKey));
+      return newJwt.sign(SecretKey(aesKey));
     } catch (_) {
       throw Exception('Невозможно обновить токен');
     }

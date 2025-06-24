@@ -1,20 +1,19 @@
 import 'dart:convert';
-
 import 'package:common_utility_package/encryption_utility.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:postgres/postgres.dart';
 import 'package:logging/logging.dart';
+import 'package:password_manager_server/api/base_route.dart';
 
 final _logger = Logger('LoginRoute');
 
-class LoginRoute {
+class LoginRoute extends BaseRoute {
   final Connection connection;
-  final EncryptionUtility encryption;
-  final Map<String, String> env;
 
-  LoginRoute(this.connection, this.env) : encryption = EncryptionUtility(env);
+  LoginRoute(this.connection);
 
+  @override
   Router get router {
     final router = Router();
     router.post('/', _login);
@@ -22,7 +21,6 @@ class LoginRoute {
   }
 
   Future<Response> _login(Request request) async {
-    // === АВТОРИЗАЦИЯ АККАУНТА ===
     try {
       final body = await request.readAsString();
       final data = jsonDecode(body);
@@ -39,7 +37,6 @@ class LoginRoute {
 
       _logger.info('Попытка входа с логином: $accountLogin');
 
-      // SQL запрос - добавляем получение user_id и aes_key
       final result = await connection.execute(
         Sql.named('''
         SELECT 
@@ -70,7 +67,6 @@ class LoginRoute {
 
       final decryptedStored = encryption.decryptText(encryptedStored);
 
-      // ЛОГИРУЕМ перед сравнением
       _logger.fine('Пароль, введённый пользователем: $password');
       _logger.fine('Зашифрованный пароль из БД:     $encryptedStored');
       _logger.fine('Расшифрованный введённый пароль: $decryptedStored');
@@ -85,17 +81,13 @@ class LoginRoute {
 
       _logger.info('Вход выполнен для логина: $accountLogin');
 
-      // Возвращаем успешный ответ с данными
-      // ИСПРАВЛЕННЫЙ ответ - добавляем userId с проверкой на null
       return Response.ok(
         jsonEncode({
           'message': 'Авторизация прошла успешно',
           'account_id': row['account_id'] ?? 0,
           'user_id': row['user_id'] ?? 0,
-          // Добавляем userId
           'account_email': row['account_email'] ?? '',
           'aes_key': row['aes_key'] ?? '',
-          // Возвращаем aes_key для пользователя
         }),
         headers: {'Content-Type': 'application/json'},
       );

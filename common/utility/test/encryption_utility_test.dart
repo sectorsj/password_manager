@@ -10,7 +10,7 @@ void main() {
   late EncryptionUtility encryptionUtility;
 
   setUp(() {
-    encryptionUtility = EncryptionUtility.fromBase64Key(dummyKeyBase64);
+    encryptionUtility = EncryptionUtility.fromBase64(dummyKeyBase64);
   });
 
   test('Шифрование и расшифровка строки', () {

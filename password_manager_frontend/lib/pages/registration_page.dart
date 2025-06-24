@@ -31,9 +31,19 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final _registrationService = RegistrationService();
 
   Future<void> _submitRegistration() async {
+    print(' Отправка данных на сервер:');
+    print('⚠️ Логин: ${_accountLoginController.text}');
+    print('⚠️ Имя: ${_userNameController.text}');
+    print('⚠️ Email: ${_emailAddressController.text}');
+    print('⚠️ Телефон: ${_phoneController.text}');
+    print('⚠️ Описание: ${_descriptionController.text}');
+    print('⚠️ Пароль: ${_passwordController.text}');
+    print('⚠️ Секретная фраза: ${_secretPhraseController.text}');
+
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
+    print('⚠️ Контроль: $_isLoading');
 
     try {
       // Отправка данных на сервер
@@ -46,6 +56,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         userDescription: _descriptionController.text.trim(),
         secretPhrase: _secretPhraseController.text.trim(),
       );
+      print('⚠️ Контроль: $result');
 
       final accountId = result['account_id'];
       final userId = result['user_id'];
@@ -53,12 +64,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
       final jwtToken = result['jwt_token'];
       final aesKey = result['aes_key'];
 
-      _logger.info(
-          'Получены данные при регистрации:', 'Account ID: $accountId');
-      _logger.info('Получены данные при регистрации:', 'Account ID: $userId');
-      _logger.info('Получены данные при регистрации:', 'Account ID: $aesKey');
-      print(
-          "Отправляемая секретная фраза: ${_secretPhraseController.text.trim()}");
+      print('⚠️ Контроль: Получены данные при регистрации:');
+      print('⚠️ Контроль: AccountID: $accountId');
+      print('⚠️ Контроль: UserID: $userId');
+      print('⚠️ Контроль: SecretPhrase: $_secretPhraseController.text.trim()');
+
+      // Вопрос когда мы это успели получить?!
+      print('⚠️ Контроль: Token: $jwtToken');
+      print('⚠️ Контроль: aesKey: $aesKey');
 
       if (accountId == null || userId == null || jwtToken == null) {
         throw Exception('Отсутствуют необходимые данные в ответе сервера');

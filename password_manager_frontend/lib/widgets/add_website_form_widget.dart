@@ -54,7 +54,7 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
     }
 
     setState(() {
-      _encryptionUtility = EncryptionUtility.fromBase64Key(aesKey);
+      _encryptionUtility = EncryptionUtility.fromSecretPhrase(aesKey);
       _isLoading = false;
     });
   }

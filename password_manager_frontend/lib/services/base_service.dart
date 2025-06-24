@@ -1,72 +1,100 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:password_manager_frontend/utils/config.dart';
 
 class BaseService {
   final String _baseUrl = baseUrl;
 
-  // Сборка URI для запроса
   Uri buildUri(String endpoint) {
-    final rawUrl = '$_baseUrl$endpoint';
-    print('🔧 Сборка URI: $rawUrl');
-    print('⚠️ baseUrl = "$_baseUrl"');
-    return Uri.parse(rawUrl);
+    final fullUrl = '$_baseUrl$endpoint';
+    print('🔧 [BaseService] Сборка URI: $fullUrl');
+    return Uri.parse(fullUrl);
   }
 
-  // Выполнение GET-запроса
-  Future<dynamic> get(String endpoint) async {
+  Future<dynamic> get(String endpoint, {Map<String, String>? headers}) async {
+    final uri = buildUri(endpoint);
+    print('📤 GET → $uri');
     try {
       final response = await http
-          .get(buildUri(endpoint))
+          .get(uri, headers: _mergeHeaders(headers))
           .timeout(const Duration(seconds: 10));
-      _handleErrors(response);
-      return jsonDecode(response.body);
+      return _processResponse(response);
+    } on SocketException {
+      throw NetworkException('Нет подключения к интернету');
+    } on HttpException {
+      throw NetworkException('Ошибка HTTP');
+    } on FormatException {
+      throw NetworkException('Ошибка формата данных');
+    } on TimeoutException {
+      throw TimeoutException('Превышено время ожидания запроса');
     } catch (e) {
-      print('Ошибка при GET-запросе: $e');
-      rethrow; // Бросаем ошибку дальше
+      print('❌ Ошибка GET-запроса: $e');
+      rethrow;
     }
   }
 
-  // Выполнение POST-запроса
-  Future<dynamic> post(String endpoint, Map<String, dynamic> body) async {
+  Future<dynamic> post(String endpoint, Map<String, dynamic> body,
+      {Map<String, String>? headers}) async {
+    final uri = buildUri(endpoint);
+    final encodedBody = jsonEncode(body);
+    print('📤 POST → $uri');
+    print('📦 Тело запроса: $encodedBody');
     try {
       final response = await http
           .post(
-            buildUri(endpoint),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(body),
+            uri,
+            headers: _mergeHeaders(headers),
+            body: encodedBody,
           )
           .timeout(const Duration(seconds: 30));
-      _handleErrors(response);
-      return jsonDecode(response.body);
+      return _processResponse(response);
+    } on SocketException {
+      throw NetworkException('Нет подключения к интернету');
+    } on HttpException {
+      throw NetworkException('Ошибка HTTP');
+    } on FormatException {
+      throw NetworkException('Ошибка формата данных');
+    } on TimeoutException {
+      throw TimeoutException('Превышено время ожидания запроса');
     } catch (e) {
-      print('Ошибка при POST-запросе: $e');
-      rethrow; // Бросаем ошибку дальше
+      print('❌ Ошибка POST-запроса: $e');
+      rethrow;
     }
   }
 
-  // Обработка ошибок ответа
-  void _handleErrors(http.Response response) {
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      print('Ошибка HTTP: ${response.statusCode}');
-      print('Тело ответа: ${response.body}');
-      if (response.statusCode == 401) {
-        // Некорректная авторизация
-        throw UnauthorizedException('Необходима авторизация');
-      } else if (response.statusCode == 404) {
-        // Ресурс не найден
-        throw NotFoundException('Ресурс не найден');
-      } else if (response.statusCode >= 500) {
-        // Ошибка на сервере
-        throw ServerException('Ошибка на сервере');
-      } else {
-        throw Exception('Ошибка ${response.statusCode}: ${response.body}');
-      }
+  // Обработка ответа
+  dynamic _processResponse(http.Response response) {
+    print('📥 Ответ [${response.statusCode}]: ${response.body}');
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
     }
+
+    switch (response.statusCode) {
+      case 401:
+        throw UnauthorizedException('Необходима авторизация');
+      case 404:
+        throw NotFoundException('Ресурс не найден');
+      case 500:
+      case 502:
+      case 503:
+      case 504:
+        throw ServerException('Ошибка на сервере');
+      default:
+        throw HttpException('Ошибка ${response.statusCode}: ${response.body}');
+    }
+  }
+
+  Map<String, String> _mergeHeaders(Map<String, String>? headers) {
+    return {
+      'Content-Type': 'application/json',
+      if (headers != null) ...headers,
+    };
   }
 }
 
-// Исключения для различных типов ошибок
+// Исключения
 class UnauthorizedException implements Exception {
   final String message;
 
@@ -92,4 +120,13 @@ class ServerException implements Exception {
 
   @override
   String toString() => 'ServerException: $message';
+}
+
+class NetworkException implements Exception {
+  final String message;
+
+  NetworkException(this.message);
+
+  @override
+  String toString() => 'NetworkException: $message';
 }

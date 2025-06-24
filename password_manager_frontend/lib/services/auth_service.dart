@@ -35,8 +35,17 @@ class AuthService extends ChangeNotifier {
   /// Устанавливает сессию из JWT токена
   Future<void> setSessionFromToken(String jwtToken) async {
     try {
+      final jwtPayload = JwtUtil.extractData(jwtToken);
+      final aesKey = jwtPayload?['aes_key'];
+
+      if (aesKey == null) {
+        throw Exception('AES ключ отсутствует в токене');
+      }
+
       final jwt = JwtUtil.verifyToken(
-          jwtToken); // Используем JwtUtil для работы с токеном
+          jwtToken, aesKey); // Используем aesKey для верификации
+
+      // Используем JwtUtil для работы с токеном
       if (jwt == null || JwtUtil.isTokenExpired(jwt)) {
         throw Exception('Токен недействителен или просрочен');
       }
@@ -49,12 +58,8 @@ class AuthService extends ChangeNotifier {
       // Сохраняем данные сессии
       await setSession(accountId: _accountId, userId: _userId);
 
-      // Извлекаем aesKey
-      final aesKey = jwt.payload['aes_key'];
-      if (aesKey is String) {
-        await SecureStorageHelper.setAesKey(
-            aesKey); // Сохраняем aesKey в SecureStorage
-      }
+      // Сохраняем aesKey в SecureStorage
+      await SecureStorageHelper.setAesKey(aesKey);
 
       // Загружаем дополнительные данные пользователя
       _account = await _accountService.fetchAccountById(_accountId);
