@@ -65,9 +65,6 @@ class AuthService extends ChangeNotifier {
 
       await prefs.setString('jwt_token', jwtToken);
 
-      _account = await _accountService.fetchAccountById(accountId);
-      _user = await _userService.fetchUserById(userId);
-
       notifyListeners();
     } catch (e) {
       print('Ошибка при установке сессии из токена: $e');
