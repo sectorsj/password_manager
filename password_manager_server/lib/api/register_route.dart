@@ -32,7 +32,6 @@ class RegisterRoute extends BaseRoute {
 
       // 2. Генерация AES ключа и шифрование пароля
       final aesKey = await _generateAesKey(data['secret_phrase']);
-      print('⚠️ Контроль: Сгенерирован AES ключ для пользователя: $aesKey');
 
       // 3. Генерация пароля, его шифрование
       final encryptedPassword =
@@ -92,9 +91,6 @@ class RegisterRoute extends BaseRoute {
   Future<Map<String, dynamic>> _extractRequestData(Request request) async {
     final body = await request.readAsString();
     final data = jsonDecode(body);
-
-    // Логируем полученные данные
-    print('⚠️ Контроль: Получены данные для регистрации аккаунта: ${data}');
 
     if ([data['account_login'], data['email_address'], data['password']]
         .any((field) => field == null || field.isEmpty)) {
