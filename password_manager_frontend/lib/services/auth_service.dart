@@ -35,8 +35,8 @@ class AuthService extends ChangeNotifier {
   /// Устанавливает сессию из JWT токена
   Future<void> setSessionFromToken(String jwtToken) async {
     try {
-      final jwtPayload = JwtUtil.extractData(jwtToken);
-      final aesKey = jwtPayload?['aes_key'];
+      // Получаем aesKey напрямую из SecureStorage
+      final aesKey = await SecureStorageHelper.getAesKey();
 
       if (aesKey == null) {
         throw Exception('AES ключ отсутствует в токене');
@@ -51,23 +51,22 @@ class AuthService extends ChangeNotifier {
       }
 
       // Извлекаем данные из JWT токена
-      final _accountId = int.parse(jwt.payload['account_id'].toString());
-      final _userId = int.parse(jwt.payload['user_id'].toString());
+      final accountId = int.parse(jwt.payload['account_id'].toString());
+      final userId = int.parse(jwt.payload['user_id'].toString());
       final _categoryId = 0;
 
-      // Сохраняем данные сессии
-      await setSession(accountId: _accountId, userId: _userId);
+      if (accountId == null || userId == null) {
+        throw Exception('Некорректные данные в токене');
+      }
 
-      // Сохраняем aesKey в SecureStorage
-      await SecureStorageHelper.setAesKey(aesKey);
+      await setSession(accountId: accountId, userId: userId);
 
-      // Загружаем дополнительные данные пользователя
-      _account = await _accountService.fetchAccountById(_accountId);
-      _user = await _userService.fetchUserById(_userId);
-
-      // Сохраняем JWT в SharedPreferences
       final prefs = await SharedPreferences.getInstance();
+
       await prefs.setString('jwt_token', jwtToken);
+
+      _account = await _accountService.fetchAccountById(accountId);
+      _user = await _userService.fetchUserById(userId);
 
       notifyListeners();
     } catch (e) {
@@ -77,50 +76,33 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Устанавливает сессию вручную
-  Future<void> setSession({
-    required int accountId,
-    required int userId,
-  }) async {
-    if (accountId == 0 || userId == 0) {
-      print('ОШИБКА: accountId, userId равны 0');
-      throw Exception('Неверные данные: accountId=$accountId, userId=$userId');
-    }
+  Future<void> setSession({required int accountId, required int userId}) async {
     _accountId = accountId;
     _userId = userId;
     _categoryId = 0;
-
-    // Загружаем данные
     _account = await _accountService.fetchAccountById(accountId);
     _user = await _userService.fetchUserById(userId);
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('account_id', accountId);
     await prefs.setInt('user_id', userId);
-    // await prefs.setInt('category_id', categoryId);
-
     notifyListeners();
   }
 
-  /// Очищаем текущую сессию
   Future<void> clearSession() async {
     _accountId = 0;
     _userId = 0;
     _account = null;
     _user = null;
-
     notifyListeners();
   }
 
-  /// Очищаем текущую сессию
   Future<void> logout() async {
     _accountId = 0;
     _userId = 0;
     _categoryId = 0;
     _account = null;
     _user = null;
-
     notifyListeners();
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
     await SecureStorageHelper.deleteAesKey();

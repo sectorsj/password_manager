@@ -35,12 +35,13 @@ class AccountRoutes {
         SELECT
           a.id,
           a.account_login,
-          a.account_email,
+          e.email_address AS account_email,
           u.user_name,
           u.user_phone,
           u.user_description
         FROM accounts a
         LEFT JOIN users u ON a.id = u.account_id
+        LEFT JOIN emails e ON a.email_id = e.id
         WHERE a.id = @accountId
       '''),
         parameters: {'accountId': accountId},

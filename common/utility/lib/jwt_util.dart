@@ -2,16 +2,18 @@ import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 class JwtUtil {
   /// Генерация JWT токена с заданной нагрузкой и временем жизни.
-  static String generateToken(Map<String, dynamic> payload,
-      {Duration expiresIn = const Duration(hours: 1),
-      String? audience,
-      String? issuer,
-      String? subject,
-      required String aesKey}) {
+  static String generateToken(
+    Map<String, dynamic> payload, {
+    Duration expiresIn = const Duration(hours: 1),
+    String? audience,
+    String? issuer,
+    String? subject,
+    required String aesKey,
+  }) {
     // Добавляем время жизни в payload
-    final expirationTime = DateTime.now().add(expiresIn).millisecondsSinceEpoch;
-    payload['exp'] = (expirationTime / 1000)
-        .floor(); // 'exp' — это стандартный параметр для срока действия токена
+    final expirationTime =
+        DateTime.now().add(expiresIn).millisecondsSinceEpoch ~/ 1000;
+    payload['exp'] = expirationTime;
 
     if (audience != null) {
       payload['aud'] = audience; // audience claim
@@ -32,13 +34,11 @@ class JwtUtil {
     try {
       final jwt = JWT.verify(token, SecretKey(aesKey));
 
-      // Проверяем, не истек ли срок действия токена
-      final exp = jwt.payload['exp'];
-      if (exp != null && DateTime.now().millisecondsSinceEpoch > exp) {
-        // Если токен просрочен
-        return null;
+      // Если токен просрочен
+      if (isTokenExpired(jwt)) {
+        return null; // Возвращаем null
       }
-      return jwt;
+      return jwt; // иначе возвращаем JWT
     } catch (_) {
       return null;
     }
@@ -47,30 +47,31 @@ class JwtUtil {
   /// Проверка, истек ли срок действия токена.
   static bool isTokenExpired(JWT jwt) {
     final exp = jwt.payload['exp'];
-    if (exp != null) {
-      final expirationDate = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
-      return expirationDate.isBefore(
+    if (exp is int) {
+      final expiration = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+      return expiration.isBefore(
           DateTime.now()); // Если время истечения меньше текущего времени
     }
     return true; // Если нет поля 'exp', считаем, что токен истек
   }
 
-  /// Обновление (рефреш) токена.
+  /// Обновление (рефреш) токена
   /// Генерирует новый токен с теми же данными, но с новым сроком действия.
-  static String refreshToken(String oldToken,
-      {Duration expiresIn = const Duration(hours: 1), required String aesKey}) {
+  static String refreshToken(
+    String oldToken, {
+    Duration expiresIn = const Duration(hours: 1),
+    required String aesKey,
+  }) {
     try {
       final oldJwt = JWT.verify(oldToken, SecretKey(aesKey));
       final payload = Map<String, dynamic>.from(oldJwt.payload);
 
       // Добавляем время жизни в payload (новое время истечения)
-      final expirationTime =
-          DateTime.now().add(expiresIn).millisecondsSinceEpoch;
-      payload['exp'] = expirationTime;
+      payload['exp'] =
+          (DateTime.now().add(expiresIn).millisecondsSinceEpoch ~/ 1000);
 
       // Генерируем новый токен с обновленным сроком действия
-      final newJwt = JWT(payload);
-      return newJwt.sign(SecretKey(aesKey));
+      return JWT(payload).sign(SecretKey(aesKey));
     } catch (_) {
       throw Exception('Невозможно обновить токен');
     }
