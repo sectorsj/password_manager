@@ -1,5 +1,6 @@
 import 'package:common_utility_package/secure_storage_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/services/registration_service.dart';
 import 'package:password_manager_frontend/utils/ui_routes.dart';
@@ -89,11 +90,19 @@ class _RegistrationPageState extends State<RegistrationPage> {
         }
       }
 
-      await Provider.of<AuthService>(context, listen: false)
-          .setSessionFromToken(jwtToken);
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.setSessionFromToken(jwtToken);
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, UiRoutes.splash);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => HomePage(
+              account: authService.account!,
+              user: authService.user!,
+            ),
+          ),
+        );
       }
     } catch (e) {
       print("Ошибка регистрации: $e");
