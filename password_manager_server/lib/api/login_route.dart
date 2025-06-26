@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:common_utility_package/encryption_utility.dart';
+import 'package:common_utility_package/hashing_utility.dart';
+import 'package:common_utility_package/jwt_util.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:postgres/postgres.dart';
@@ -35,26 +37,27 @@ class LoginRoute extends BaseRoute {
         );
       }
 
-      _logger.info('Попытка входа с логином: $accountLogin');
+      print('⚠️ Внимание контроль! Попытка входа с логином: $accountLogin');
 
       final result = await connection.execute(
         Sql.named('''
-        SELECT 
-          a.id AS account_id, 
-          a.account_email, 
-          a.encrypted_password,
-          a.aes_key,
-          u.id as user_id
-        FROM accounts a
-        LEFT JOIN users u ON a.id = u.account_id
-        WHERE a.account_login = @accountLogin
-      '''),
+    SELECT 
+      a.id AS account_id, 
+      e.email_address AS account_email, 
+      a.encrypted_password,
+      a.aes_key,
+      u.id as user_id
+    FROM accounts a
+    LEFT JOIN users u ON a.id = u.account_id
+    LEFT JOIN emails e ON a.email_id = e.id
+    WHERE a.account_login = @accountLogin
+  '''),
         parameters: {'accountLogin': accountLogin},
       );
 
       if (result.isEmpty) {
-        _logger
-            .warning('Пользователь с логином "$accountLogin" не найден в БД');
+        print(
+            '⚠️ Внимание контроль! Пользователь с логином "$accountLogin" не найден в БД');
 
         return Response.forbidden(
           jsonEncode({'error': 'Неверное имя пользователя или пароль'}),
@@ -64,35 +67,56 @@ class LoginRoute extends BaseRoute {
 
       final row = result.first.toColumnMap();
       final encryptedStored = row['encrypted_password'] as String;
+      final aesKeyBase64 = row['aes_key'] as String;
 
+      print(
+          '⚠️ Внимание контроль! Зашифрованный пароль из БД: $encryptedStored');
+      print('⚠️ Внимание контроль! AES ключ (Base64): $aesKeyBase64');
+
+      final encryption = EncryptionUtility.fromBase64(aesKeyBase64);
       final decryptedStored = encryption.decryptText(encryptedStored);
 
-      _logger.fine('Пароль, введённый пользователем: $password');
-      _logger.fine('Зашифрованный пароль из БД:     $encryptedStored');
-      _logger.fine('Расшифрованный введённый пароль: $decryptedStored');
+      print('⚠️ Внимание контроль! Введённый пароль: $password');
+      print(
+          '⚠️ Внимание контроль! Расшифрованный пароль из БД: $decryptedStored');
 
       if (decryptedStored != password) {
-        _logger.warning('Пароль не совпадает для логина: $accountLogin');
+        print(
+            '⚠️ Внимание контроль! Пароль не совпадает для логина: $accountLogin');
+
         return Response.forbidden(
           jsonEncode({'error': 'Неверное имя пользователя или пароль'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
 
-      _logger.info('Вход выполнен для логина: $accountLogin');
+      // Генерация JWT
+      final accountId = row['account_id'] as int;
+      final userId = row['user_id'] as int;
+      final aesKey = HashingUtility.fromBase64(aesKeyBase64);
+
+      final jwtToken = JwtUtil.generateToken({
+        'account_id': accountId,
+        'user_id': userId,
+        'aes_key': aesKeyBase64,
+      }, aesKey: aesKeyBase64);
+
+      print('✅ Вход выполнен для: $accountLogin');
+      print('⚠️ JWT токен: $jwtToken');
 
       return Response.ok(
         jsonEncode({
           'message': 'Авторизация прошла успешно',
-          'account_id': row['account_id'] ?? 0,
-          'user_id': row['user_id'] ?? 0,
+          'account_id': accountId,
+          'user_id': userId,
           'account_email': row['account_email'] ?? '',
-          'aes_key': row['aes_key'] ?? '',
+          'aes_key': aesKeyBase64,
+          'jwt_token': jwtToken,
         }),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e, stack) {
-      _logger.severe('Ошибка при логине: $e\n$stack');
+      print('❌ Ошибка при логине: $e\n$stack');
       return Response.internalServerError(
         body: jsonEncode({'error': 'Ошибка сервера при авторизации'}),
         headers: {'Content-Type': 'application/json'},

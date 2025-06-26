@@ -31,10 +31,12 @@ class _WebsitesTabState extends State<WebsitesTab> {
 
     try {
       final websites = await websiteService.getWebsitesByUser(userId);
+      if (!mounted) return;
       setState(() {
         _websites = websites;
       });
     } catch (e) {
+      if (!mounted) return;
       print('Ошибка при загрузке сайтов: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Не удалось загрузить сайты')),
@@ -48,17 +50,20 @@ class _WebsitesTabState extends State<WebsitesTab> {
     if (!isVisible && !_decryptedPasswords.containsKey(index)) {
       try {
         final decrypted = await websiteService.getDecryptedPassword(website.id);
+        if (!mounted) return;
         setState(() {
           _decryptedPasswords[index] = decrypted;
           _showPasswordMap[index] = true;
         });
       } catch (e) {
+        if (!mounted) return;
         print('Ошибка при расшифровке пароля: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Не удалось расшифровать пароль')),
         );
       }
     } else {
+      if (!mounted) return;
       setState(() {
         _showPasswordMap[index] = !isVisible;
       });

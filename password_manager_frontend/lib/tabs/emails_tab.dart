@@ -35,10 +35,12 @@ class _EmailsTabState extends State<EmailsTab> {
 
     try {
       List<Email> emails = await emailService.getEmails(userId);
+      if (!mounted) return;
       setState(() {
         _emails = emails;
       });
     } catch (e) {
+      if (!mounted) return;
       print('Ошибка при загрузке email-ов: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

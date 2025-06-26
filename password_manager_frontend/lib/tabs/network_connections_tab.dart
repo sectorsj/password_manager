@@ -29,10 +29,12 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
     final userId = Provider.of<AuthService>(context, listen: false).userId;
     try {
       final result = await service.getNetworkConnectionsByUser(userId);
+      if (!mounted) return;
       setState(() {
         _connections = result;
       });
     } catch (e) {
+      if (!mounted) return;
       print('Ошибка при загрузке подключений: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Не удалось загрузить подключения')),
@@ -45,16 +47,19 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
     if (!visible && !_decryptedPasswords.containsKey(index)) {
       try {
         final decrypted = await service.getDecryptedPassword(conn.id);
+        if (!mounted) return;
         setState(() {
           _decryptedPasswords[index] = decrypted;
           _showPasswordMap[index] = true;
         });
       } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Ошибка при расшифровке пароля')),
         );
       }
     } else {
+      if (!mounted) return;
       setState(() {
         _showPasswordMap[index] = !visible;
       });
