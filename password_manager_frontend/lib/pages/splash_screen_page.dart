@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
+import '../services/auth_service.dart';
 import '../utils/ui_routes.dart';
 
 class SplashScreenPage extends StatefulWidget {
@@ -14,9 +17,24 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () {
+    _checkSession(); // Проверка сессии при старте
+  }
+
+  Future<void> _checkSession() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+
+    // Инициализируем AuthService для проверки сессии
+    await authService.initialize();
+
+    // Проверяем
+    // Если сессия активна
+    if (authService.isLoggedIn) {
+      // Если сессия активна, сразу переходим на HomePage
+      Navigator.pushReplacementNamed(context, UiRoutes.home);
+    } else {
+      // Иначе показываем страницу логина
       Navigator.pushReplacementNamed(context, UiRoutes.login);
-    });
+    }
   }
 
   @override
@@ -34,7 +52,7 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
             ),
             SizedBox(height: 20),
             Text(
-              'Password Manager',
+              'МЕНЕДЖЕР ПАРОЛЕЙ',
               style: TextStyle(
                 fontSize: 24.0,
                 color: Colors.white,

@@ -1,0 +1,10 @@
+-- SELECT public.create_email_entry
+--     'first@mail.ru',        --
+--     'Мой First email',      --
+--     '100',                  --
+--     'WiFi Home',            --
+--     106,                    --
+--     1,                      --
+--     NULL,                   --
+--     'Основное подключение'  --
+-- );

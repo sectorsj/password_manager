@@ -59,14 +59,6 @@ class RegisterRoute extends BaseRoute {
           dbResult['account_id'], dbResult['user_id'], aesKey);
       print('⚠️ Контроль: Сгенерирован JWT токен: $jwtToken');
 
-      // // 5.1. Проверяем уникальность логина и email
-      // final checkResult = await _checkUniqueLoginAndEmail(
-      //     data['account_login'], data['email_address']);
-      // if (checkResult != null) {
-      //   print('⚠️ Контроль: Логин или email уже заняты');
-      //   return checkResult;
-      // }
-
       // 6. Возвращаем успешный ответ с токеном и AES ключом
       return Response.ok(
         jsonEncode({

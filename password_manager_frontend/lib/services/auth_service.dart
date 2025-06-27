@@ -32,13 +32,28 @@ class AuthService extends ChangeNotifier {
 
   bool get isLoggedIn => _accountId != 0 && _userId != 0;
 
+  Future<void> initialize() async {
+    try {
+      // Проверка валидной сессии
+      if (await SecureStorageHelper.isSessionValid()) {
+        final jwtToken = await SecureStorageHelper.getJwtToken();
+        await setSessionFromToken(
+            jwtToken!); // Устанавливаем сессию, если токен есть
+      } else {
+        print('Сессия не найдена или невалидна');
+      }
+    } catch (e) {
+      print('Ошибка инициализации сессии: $e');
+    }
+  }
+
   /// Устанавливает сессию из JWT токена
   Future<void> setSessionFromToken(String jwtToken) async {
     try {
       // Получаем aesKey напрямую из SecureStorage
       final aesKey = await SecureStorageHelper.getAesKey();
 
-      if (aesKey == null) {
+      if (aesKey == null || aesKey.isEmpty) {
         throw Exception('AES ключ отсутствует в токене');
       }
 

@@ -44,4 +44,15 @@ class SecureStorageHelper {
   static Future<void> clearAll() async {
     await _secureStorage.deleteAll();
   }
+
+  // Проверяет, существует ли валидный AES ключ и JWT токен
+  static Future<bool> isSessionValid() async {
+    final aesKey = await getAesKey();
+    final jwtToken = await getJwtToken();
+
+    return aesKey != null &&
+        jwtToken != null &&
+        aesKey.isNotEmpty &&
+        jwtToken.isNotEmpty;
+  }
 }

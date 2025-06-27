@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/utils/ui_routes.dart';
 import 'package:provider/provider.dart';
 import 'package:password_manager_frontend/pages/splash_screen_page.dart';
@@ -34,6 +35,12 @@ class MyApp extends StatelessWidget {
         UiRoutes.splash: (_) => const SplashScreenPage(),
         UiRoutes.login: (_) => const LoginPage(),
         UiRoutes.register: (_) => const RegistrationPage(),
+        UiRoutes.home: (_) {
+          final authService = Provider.of<AuthService>(context, listen: false);
+          return authService.isLoggedIn
+              ? HomePage(account: authService.account!, user: authService.user!)
+              : const LoginPage(); // Если сессия не активна, показываем LoginPage
+        },
       },
     );
   }
