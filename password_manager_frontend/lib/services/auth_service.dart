@@ -44,6 +44,7 @@ class AuthService extends ChangeNotifier {
       }
     } catch (e) {
       print('Ошибка инициализации сессии: $e');
+      await clearSession();
     }
   }
 
@@ -69,6 +70,8 @@ class AuthService extends ChangeNotifier {
       final accountId = int.parse(jwt.payload['account_id'].toString());
       final userId = int.parse(jwt.payload['user_id'].toString());
       final _categoryId = 0;
+
+      await SecureStorageHelper.setAesKey(aesKey);
 
       if (accountId == null || userId == null) {
         throw Exception('Некорректные данные в токене');

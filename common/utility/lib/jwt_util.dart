@@ -31,6 +31,10 @@ class JwtUtil {
 
   /// Верификация JWT токена. Возвращает объект JWT или null, если токен не валиден.
   static JWT? verifyToken(String token, String aesKey) {
+    if (aesKey.isEmpty) {
+      throw Exception("AES ключ не может быть пустым");
+    }
+
     try {
       final jwt = JWT.verify(token, SecretKey(aesKey));
 
