@@ -21,15 +21,15 @@ DECLARE
     email_id          BIGINT;
     new_connection_id BIGINT;
 BEGIN
-    -- 1. Никнейм
+    -- 1. Проверка и добавление никнейма
     SELECT id
     INTO nickname_id
     FROM nicknames
     WHERE nickname = p_nickname;
 
     IF nickname_id IS NULL THEN
-        INSERT INTO nicknames (nickname, account_id)
-        VALUES (p_nickname, p_account_id) -- передаем account_id в nicknames
+        INSERT INTO nicknames (nickname, account_id, user_id)
+        VALUES (p_nickname, p_account_id, p_user_id) -- передаем user_id
         RETURNING id INTO nickname_id;
     END IF;
 
@@ -37,7 +37,7 @@ BEGIN
     VALUES (p_user_id, nickname_id)
     ON CONFLICT DO NOTHING;
 
-    -- 2. Email (если указан)
+    -- 2. Проверка и добавление email
     IF p_email_address IS NOT NULL AND LENGTH(TRIM(p_email_address)) > 0 THEN
         SELECT id
         INTO email_id
@@ -63,7 +63,7 @@ BEGIN
         ON CONFLICT DO NOTHING;
     END IF;
 
-    -- 3. Вставка в network_connections
+    -- 3. Вставка новой записи в таблицу network_connections
     INSERT INTO network_connections (account_id,
                                      category_id,
                                      encrypted_password,
@@ -83,7 +83,7 @@ BEGIN
             p_network_connection_description,
             p_user_id,
             nickname_id,
-            email_id)
+            email_id) -- Убедитесь, что email_id здесь правильно передается
     RETURNING id INTO new_connection_id;
 
     RETURN new_connection_id;
