@@ -23,17 +23,30 @@ class _SplashScreenPageState extends State<SplashScreenPage> {
   Future<void> _checkSession() async {
     final authService = Provider.of<AuthService>(context, listen: false);
 
-    // Инициализируем AuthService для проверки сессии
-    await authService.initialize();
+    try {
+      // Инициализируем AuthService для проверки сессии
+      await authService.initialize();
 
-    // Проверяем
-    // Если сессия активна
-    if (authService.isLoggedIn) {
-      // Если сессия активна, сразу переходим на HomePage
-      Navigator.pushReplacementNamed(context, UiRoutes.home);
-    } else {
-      // Иначе показываем страницу логина
-      Navigator.pushReplacementNamed(context, UiRoutes.login);
+      // Проверяем
+      // Если сессия активна
+      if (authService.isLoggedIn) {
+        // Сразу переходим на HomePage
+        if (mounted) {
+          // Если сессия активна, сразу переходим на HomePage
+          Navigator.pushReplacementNamed(context, UiRoutes.home);
+        }
+      } else {
+        if (mounted) {
+          // Иначе показываем страницу логина
+          Navigator.pushReplacementNamed(context, UiRoutes.login);
+        }
+      }
+    } catch (e) {
+      print('Ошибка при проверке сессии: $e');
+      // Если ошибка, показываем LoginPage
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, UiRoutes.login);
+      }
     }
   }
 
