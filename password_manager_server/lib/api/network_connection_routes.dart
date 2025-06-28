@@ -49,7 +49,7 @@ class NetworkConnectionRoutes {
                nc.nickname_id,
                n.nickname,
                nc.email_id,
-               e.email_address AS website_email,
+               e.email_address AS network_connection_email,
                nc.created_at,
                nc.updated_at
         FROM network_connections nc
@@ -87,7 +87,7 @@ class NetworkConnectionRoutes {
 
     if (connId == null) {
       return Response.badRequest(
-        body: jsonEncode({'error': 'Invalid connection ID'}),
+        body: jsonEncode({'error': 'Неверный connection ID'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
@@ -99,7 +99,7 @@ class NetworkConnectionRoutes {
 
       if (result.isEmpty) {
         return Response.notFound(
-          jsonEncode({'error': 'Connection not found'}),
+          jsonEncode({'error': 'Соединение не найдено'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
@@ -126,14 +126,23 @@ class NetworkConnectionRoutes {
       final body = await request.readAsString();
       final data = jsonDecode(body);
 
-      final encryptedPassword = data['encrypted_password'] as String?;
+      // Основной пароль подключения (обязательный)
+      final rawPassword = data['password'] as String?;
+      final encryptedPassword =
+          rawPassword != null ? encryption.encryptText(rawPassword) : null;
+
+      // Email-пароль (необязательный)
+      final rawEmailPassword = data['email_password'] as String?;
+      final encryptedEmailPassword = rawEmailPassword != null
+          ? encryption.encryptText(rawEmailPassword)
+          : '';
+
       final connectionName = data['network_connection_name'] as String?;
-      final nickname = data['nickname'] as String?;
       final ipv4 = data['ipv4'] as String?;
       final ipv6 = data['ipv6'] as String?;
+      final nickname = data['nickname'] as String?;
+      final emailAddress = data['email_address'] as String?;
       final description = data['network_connection_description'] as String?;
-      final email = data['website_email'] as String?;
-      final emailPassword = data['email_encrypted_password'] as String? ?? '';
       final emailDescription = data['email_description'] as String?;
       final accountId = data['account_id'] as int?;
       final categoryId = data['category_id'] as int?;
@@ -145,7 +154,7 @@ class NetworkConnectionRoutes {
         nickname,
         accountId,
         categoryId,
-        userId
+        userId,
       ].any((v) => v == null || (v is String && v.trim().isEmpty))) {
         return Response.badRequest(
           body: jsonEncode({'error': 'Отсутствуют обязательные поля'}),
@@ -154,21 +163,21 @@ class NetworkConnectionRoutes {
       }
 
       await connection.execute(Sql.named('''
-        SELECT create_network_connection_with_nickname_and_email(
-          @accountId,
-          @userId,
-          @categoryId,
-          @nickname,
-          @encryptedPassword,
-          @connectionName,
-          @ipv4,
-          @ipv6,
-          @description,
-          @email,
-          @emailPassword,
-          @emailDescription
-        )
-      '''), parameters: {
+      SELECT create_network_connection_with_nickname_and_email(
+        @accountId,
+        @userId,
+        @categoryId,
+        @nickname,
+        @encryptedPassword,
+        @connectionName,
+        @ipv4,
+        @ipv6,
+        @description,
+        @emailAddress,
+        @emailPassword,
+        @emailDescription
+      )
+    '''), parameters: {
         'accountId': accountId,
         'userId': userId,
         'categoryId': categoryId,
@@ -178,8 +187,8 @@ class NetworkConnectionRoutes {
         'ipv4': ipv4,
         'ipv6': ipv6,
         'description': description,
-        'email': email,
-        'emailPassword': emailPassword,
+        'emailAddress': emailAddress,
+        'emailPassword': encryptedEmailPassword,
         'emailDescription': emailDescription,
       });
 

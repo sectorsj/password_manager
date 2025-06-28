@@ -30,74 +30,48 @@ class _AddNetworkConnectionFormWidgetState
   final _ipv4Controller = TextEditingController();
   final _ipv6Controller = TextEditingController();
   final _loginController = TextEditingController();
+  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _descriptionController = TextEditingController();
 
   final NetworkConnectionService _service = NetworkConnectionService();
-  final _secureStorage = const FlutterSecureStorage();
-
-  EncryptionUtility? _encryptionUtility;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadEncryptionUtility();
-  }
-
-  Future<void> _loadEncryptionUtility() async {
-    final aesKey = await _secureStorage.read(key: 'aes_key');
-    if (aesKey == null || aesKey.isEmpty) {
-      print('AES ключ не найден');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('AES ключ не найден. Повторите вход.')),
-      );
-      Navigator.pop(context);
-      return;
-    }
-    setState(() {
-      _encryptionUtility = EncryptionUtility.fromSecretPhrase(aesKey);
-      _isLoading = false;
-    });
-  }
+  bool _isLoading = false;
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_encryptionUtility == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ошибка шифрования')),
-      );
-      return;
-    }
+    setState(() => _isLoading = true);
     final authService = Provider.of<AuthService>(context, listen: false);
-    final encryptedPassword =
-        _encryptionUtility!.encryptText(_passwordController.text);
     final connection = NetworkConnection(
       id: 0,
       networkConnectionName: _nameController.text,
       ipv4: _ipv4Controller.text.isNotEmpty ? _ipv4Controller.text : null,
       ipv6: _ipv6Controller.text.isNotEmpty ? _ipv6Controller.text : null,
-      encryptedPassword: encryptedPassword,
+      password: _passwordController.text,
+      // \u2705 plain password (ИСПРАВЛЕНО)
       networkConnectionDescription: _descriptionController.text,
       accountId: widget.accountId,
       userId: authService.userId,
-      // nicknameId: 0,
-      // // временно 0, логин пойдёт как nickname
-      emailId: null,
+      networkConnectionEmail: _emailController.text.trim().isEmpty
+          ? null
+          : _emailController.text.trim(),
       nickname: _loginController.text,
       categoryId: widget.categoryId ?? 3,
     );
     try {
       final result = await _service.addNetworkConnection(connection);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result)),
       );
       Navigator.pop(context);
     } catch (e) {
       print('Ошибка при добавлении: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ошибка при добавлении подключения')),
       );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -136,6 +110,11 @@ class _AddNetworkConnectionFormWidgetState
                         validator: (value) => value == null || value.isEmpty
                             ? 'Введите пароль'
                             : null,
+                      ),
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                            labelText: 'Эл. почта (необязательно)'),
                       ),
                       TextFormField(
                         controller: _ipv4Controller,

@@ -77,6 +77,7 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
           children: [
             Text('IPv4: ${conn.ipv4 ?? '—'}'),
             Text('IPv6: ${conn.ipv6 ?? '—'}'),
+            Text('Эл. почта: ${conn.networkConnectionEmail ?? '—'}'),
             Text('Описание: ${conn.networkConnectionDescription ?? '—'}'),
             Text('Категория: ${conn.categoryId}'),
           ],
@@ -125,6 +126,7 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
             DataColumn(label: Text('Название')),
             DataColumn(label: Text('IPv4')),
             DataColumn(label: Text('IPv6')),
+            DataColumn(label: Text('Эл. почта')),
             DataColumn(label: Text('Пароль')),
             DataColumn(label: Text('Подробнее')),
           ],
@@ -140,6 +142,7 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
                 DataCell(Text(conn.networkConnectionName)),
                 DataCell(Text(conn.ipv4 ?? '—')),
                 DataCell(Text(conn.ipv6 ?? '—')),
+                DataCell(Text(conn.networkConnectionEmail ?? '—')),
                 DataCell(Row(
                   children: [
                     Text(isShown

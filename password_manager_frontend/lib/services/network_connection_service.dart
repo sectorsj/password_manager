@@ -4,7 +4,7 @@ import 'package:password_manager_frontend/models/network_connection.dart';
 import 'package:password_manager_frontend/services/base_service.dart';
 
 class NetworkConnectionService extends BaseService {
-  // Получить все сетевые подключения для пользователя
+  // ✅ Получить все сетевые подключения для пользователя
   Future<List<NetworkConnection>> getNetworkConnectionsByUser(
       int userId) async {
     final jsonData = await get('/network-connections?user_id=$userId');
@@ -13,7 +13,8 @@ class NetworkConnectionService extends BaseService {
         .toList();
   }
 
-  // Добавить сетевое подключение
+  // ✅ Добавить сетевое подключение
+  // 🔄 открытый пароль теперь шифруется на сервере
   Future<String> addNetworkConnection(NetworkConnection conn) async {
     final jsonBody = Map<String, dynamic>.from(conn.toJson())
       ..removeWhere((key, value) =>
@@ -27,7 +28,7 @@ class NetworkConnectionService extends BaseService {
     return 'Сетевое подключение добавлено успешно';
   }
 
-  // Получить расшифрованный пароль по ID подключения
+  // ✅ Получить расшифрованный пароль по ID подключения
   Future<String> getDecryptedPassword(int id) async {
     final response = await get('/network-connections/$id/password');
     if (response is Map && response.containsKey('decrypted_password')) {
