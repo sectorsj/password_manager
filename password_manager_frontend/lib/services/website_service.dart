@@ -11,11 +11,8 @@ class WebsiteService extends BaseService {
   Future<String> addWebsite(Website website) async {
     final jsonBody = website.toJson();
 
-    // Добавляем email_encrypted_password = encrypted_password по умолчанию
-    jsonBody['email_encrypted_password'] = website.encryptedPassword;
-
     await post('/websites/add', jsonBody);
-    return 'Вебсайт (Website) добавлен успешно';
+    return 'Вебсайт добавлен успешно';
   }
 
   // --- services/website_service.dart ---

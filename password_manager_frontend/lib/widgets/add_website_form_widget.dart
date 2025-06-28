@@ -69,9 +69,6 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
       return;
     }
 
-    final encryptedPassword =
-        _encryptionUtility!.encryptText(_passwordController.text);
-
     final website = Website(
       id: 0,
       websiteName: _nameController.text,
@@ -82,7 +79,7 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
       websiteEmail: _emailController.text.trim().isEmpty
           ? null
           : _emailController.text.trim(),
-      encryptedPassword: encryptedPassword,
+      password: _passwordController.text,
       websiteDescription: _descriptionController.text,
       accountId: widget.accountId,
       categoryId: widget.categoryId ?? 3,
@@ -142,7 +139,7 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
                       TextFormField(
                         controller: _emailController,
                         decoration: const InputDecoration(
-                            labelText: 'Email (необязательно)'),
+                            labelText: 'Эл. почта (необязательно)'),
                       ),
                       TextFormField(
                         controller: _passwordController,

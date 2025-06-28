@@ -128,29 +128,36 @@ class WebsiteRoutes {
       final body = await request.readAsString();
       final data = jsonDecode(body);
 
-      final encryptedPassword = data['encrypted_password'] as String?;
+      // Основной пароль сайта
+      final rawPassword = data['password'] as String?;
+      final encryptedPassword =
+          rawPassword != null ? encryption.encryptText(rawPassword) : null;
+
+      // Email-пароль (необязательный)
+      final rawEmailPassword = data['email_password'] as String?;
+      final encryptedEmailPassword = rawEmailPassword != null
+          ? encryption.encryptText(rawEmailPassword)
+          : '';
+
       final websiteName = data['website_name'] as String?;
       final websiteUrl = data['website_url'] as String?;
       final nickname = data['nickname'] as String?;
-      final websiteEmail =
-          data['website_email'] as String?; // используется как email_address
+      final emailAddress = data['email_address'] as String?;
       final websiteDescription = data['website_description'] as String?;
+      final emailDescription = data['email_description'] as String?;
       final accountId = data['account_id'] as int?;
       final categoryId = data['category_id'] as int?;
       final userId = data['user_id'] as int?;
-      final emailEncryptedPassword =
-          data['email_encrypted_password'] as String? ?? '';
-      final emailDescription = data['email_description'] as String?;
 
       if ([
-        encryptedPassword,
         websiteName,
         websiteUrl,
         nickname,
+        encryptedPassword,
         accountId,
         categoryId,
         userId,
-      ].any((e) => e == null || (e is String && e.trim().isEmpty))) {
+      ].any((v) => v == null || (v is String && v.trim().isEmpty))) {
         return Response.badRequest(
           body:
               jsonEncode({'error': 'Некоторые обязательные поля отсутствуют'}),
@@ -168,7 +175,7 @@ class WebsiteRoutes {
         @websiteName,
         @websiteUrl,
         @websiteDescription,
-        @email,
+        @emailAddress,
         @emailPassword,
         @emailDescription
       )
@@ -181,8 +188,8 @@ class WebsiteRoutes {
         'websiteName': websiteName,
         'websiteUrl': websiteUrl,
         'websiteDescription': websiteDescription,
-        'email': websiteEmail,
-        'emailPassword': emailEncryptedPassword,
+        'emailAddress': emailAddress,
+        'emailPassword': encryptedEmailPassword,
         'emailDescription': emailDescription,
       });
 
