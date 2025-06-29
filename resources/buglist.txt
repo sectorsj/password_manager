@@ -1,0 +1,8 @@
+BUGS:
+1. таблица emails:
+- не сохраняются данные в поле encrypted_password
+2. таблица websites:
+- не сохраняются данные в поле website_email
+- не сохраняются данные в поле email_id
+3. таблица network_connections:
+- не сохраняются данные в поле email_id
