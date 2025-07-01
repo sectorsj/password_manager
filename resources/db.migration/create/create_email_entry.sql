@@ -1,14 +1,3 @@
--- SELECT public.create_email_entry
---     'first@mail.ru',        --
---     'Мой First email',      --
---     '100',                  --
---     'WiFi Home',            --
---     106,                    --
---     1,                      --
---     NULL,                   --
---     'Основное подключение'  --
--- );
-
 CREATE OR REPLACE FUNCTION create_email_entry(
     p_email_address character varying,
     p_email_description text,
