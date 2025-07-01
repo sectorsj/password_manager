@@ -22,6 +22,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
   final _accountLoginController = TextEditingController();
   final _userNameController = TextEditingController();
   final _emailAddressController = TextEditingController();
+  final _emailPasswordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -36,9 +37,10 @@ class _RegistrationPageState extends State<RegistrationPage> {
     print('⚠️ Логин: ${_accountLoginController.text}');
     print('⚠️ Имя: ${_userNameController.text}');
     print('⚠️ Email: ${_emailAddressController.text}');
+    print('⚠️ Пароль Email: ${_emailPasswordController.text}');
     print('⚠️ Телефон: ${_phoneController.text}');
     print('⚠️ Описание: ${_descriptionController.text}');
-    print('⚠️ Пароль: ${_passwordController.text}');
+    print('⚠️ Пароль аккаунта: ${_passwordController.text}');
     print('⚠️ Секретная фраза: ${_secretPhraseController.text}');
 
     if (!_formKey.currentState!.validate()) return;
@@ -51,6 +53,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       final result = await _registrationService.register(
         accountLogin: _accountLoginController.text.trim(),
         emailAddress: _emailAddressController.text.trim(),
+        emailPassword: _emailPasswordController.text.trim(),
         password: _passwordController.text.trim(),
         userName: _userNameController.text.trim(),
         userPhone: _phoneController.text.trim(),
@@ -147,6 +150,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     value == null || value.isEmpty ? 'Введите email' : null,
               ),
               TextFormField(
+                controller: _emailPasswordController,
+                decoration: const InputDecoration(labelText: 'Пароль от email'),
+                obscureText: true,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Введите пароль от email'
+                    : null,
+              ),
+              TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(labelText: 'Телефон'),
               ),
@@ -158,13 +169,14 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 controller: _passwordController,
                 decoration: const InputDecoration(labelText: 'Пароль'),
                 obscureText: true,
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Введите пароль' : null,
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Введите пароль от аккаунта'
+                    : null,
               ),
               TextFormField(
                 controller: _confirmPasswordController,
-                decoration:
-                    const InputDecoration(labelText: 'Подтвердите пароль'),
+                decoration: const InputDecoration(
+                    labelText: 'Подтвердите пароль аккаунта'),
                 obscureText: true,
                 validator: (value) => value != _passwordController.text
                     ? 'Пароли не совпадают'

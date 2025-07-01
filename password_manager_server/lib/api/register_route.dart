@@ -42,9 +42,13 @@ class RegisterRoute extends BaseRoute {
       String aesKeyBase64 = HashingUtility.toBase64(aesKey);
       print('⚠️ Контроль: Преобразование AES ключа в Base64: $aesKeyBase64');
 
+      final emailEncryptedPassword =
+          await _encryptPassword(data['email_password'], aesKey);
+      print('⚠️ Контроль: Email-пароль зашифрован: $emailEncryptedPassword');
+
       // 4. Вставка данных в базу данных
-      final dbResult =
-          await _insertUserDataToDb(data, aesKeyBase64, encryptedPassword);
+      final dbResult = await _insertUserDataToDb(
+          data, aesKeyBase64, encryptedPassword, emailEncryptedPassword);
       print('⚠️ Контроль: Данные успешно вставлены в базу данных: $dbResult');
 
       if (dbResult == null) {
@@ -84,9 +88,13 @@ class RegisterRoute extends BaseRoute {
     final body = await request.readAsString();
     final data = jsonDecode(body);
 
-    if ([data['account_login'], data['email_address'], data['password']]
-        .any((field) => field == null || field.isEmpty)) {
-      throw Exception('Необходимо указать логин, email и пароль');
+    if ([
+      data['account_login'],
+      data['email_address'],
+      data['password'],
+      data['email_password'],
+    ].any((field) => field == null || field.isEmpty)) {
+      throw Exception('Необходимо указать логин, email и пароли для них');
     }
     return data;
   }
@@ -114,6 +122,7 @@ class RegisterRoute extends BaseRoute {
     Map<String, dynamic> data,
     String aesKeyBase64,
     String encryptedPassword,
+    String emailEncryptedPassword,
   ) async {
     try {
       final result = await connection.execute(
@@ -124,8 +133,10 @@ class RegisterRoute extends BaseRoute {
         @encryptedPassword,
         @aesKey,
         @userName,
+        @emailEncryptedPassword,
         @userPhone,
-        @userDescription)
+        @userDescription
+        )
       '''),
         parameters: {
           'accountLogin': data['account_login'],
@@ -133,6 +144,7 @@ class RegisterRoute extends BaseRoute {
           'encryptedPassword': encryptedPassword,
           'aesKey': aesKeyBase64,
           'userName': data['user_name'],
+          'emailEncryptedPassword': emailEncryptedPassword,
           'userPhone': data['user_phone'],
           'userDescription': data['user_description'],
         },
@@ -159,27 +171,6 @@ class RegisterRoute extends BaseRoute {
       throw Exception('Ошибка при регистрации');
     }
   }
-
-  // Future<Response?> _checkUniqueLoginAndEmail(
-  //     String accountLogin, String emailAddress) async {
-  //   final checkQuery = await connection.execute(
-  //     'SELECT 1 FROM accounts WHERE account_login = @accountLogin OR account_email = @emailAddress LIMIT 1',
-  //     parameters: {
-  //       'accountLogin': accountLogin,
-  //       'emailAddress': emailAddress,
-  //     },
-  //   );
-  //
-  //   if (checkQuery.isNotEmpty) {
-  //     print('⚠️ Контроль: Логин или email уже заняты');
-  //     return Response.badRequest(
-  //       body: jsonEncode({'error': 'Логин или email уже заняты'}),
-  //       headers: {'Content-Type': 'application/json'},
-  //     );
-  //   }
-  //
-  //   return null;
-  // }
 
   String _generateJwtToken(int accountId, int userId, Uint8List aesKey) {
     print('⚠️ Контроль: Генерация JWT токена');
