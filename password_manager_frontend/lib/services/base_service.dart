@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:common_utility_package/secure_storage_helper.dart';
 import 'package:http/http.dart' as http;
 import 'package:password_manager_frontend/utils/config.dart';
 
@@ -17,8 +18,9 @@ class BaseService {
     final uri = buildUri(endpoint);
     print('📤 GET → $uri');
     try {
+      final mergedHeaders = await _mergeHeaders(headers);
       final response = await http
-          .get(uri, headers: _mergeHeaders(headers))
+          .get(uri, headers: mergedHeaders)
           .timeout(const Duration(seconds: 10));
       return _processResponse(response);
     } on SocketException {
@@ -39,15 +41,14 @@ class BaseService {
       {Map<String, String>? headers}) async {
     final uri = buildUri(endpoint);
     final encodedBody = jsonEncode(body);
+
     print('📤 POST → $uri');
     print('📦 Тело запроса: $encodedBody');
+
     try {
+      final mergedHeaders = await _mergeHeaders(headers);
       final response = await http
-          .post(
-            uri,
-            headers: _mergeHeaders(headers),
-            body: encodedBody,
-          )
+          .post(uri, headers: mergedHeaders, body: encodedBody)
           .timeout(const Duration(seconds: 30));
       return _processResponse(response);
     } on SocketException {
@@ -64,7 +65,6 @@ class BaseService {
     }
   }
 
-  // Обработка ответа
   dynamic _processResponse(http.Response response) {
     print('📥 Ответ [${response.statusCode}]: ${response.body}');
     if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -86,8 +86,11 @@ class BaseService {
     }
   }
 
-  Map<String, String> _mergeHeaders(Map<String, String>? headers) {
+  Future<Map<String, String>> _mergeHeaders(
+      Map<String, String>? headers) async {
+    final token = await SecureStorageHelper.getJwtToken();
     return {
+      'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
       if (headers != null) ...headers,
     };
