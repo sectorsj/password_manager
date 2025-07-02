@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION create_email_entry(
+CREATE OR REPLACE FUNCTION public.create_email_entry(
     p_email_address character varying,
     p_email_description text,
     p_encrypted_password text,
@@ -6,8 +6,10 @@ CREATE OR REPLACE FUNCTION create_email_entry(
     p_category_id bigint DEFAULT NULL,
     p_user_id bigint DEFAULT NULL
 )
-    RETURNS bigint AS
-$$
+    RETURNS bigint
+    LANGUAGE plpgsql
+AS
+$function$
 DECLARE
     v_email_id bigint;
 BEGIN
@@ -25,6 +27,12 @@ BEGIN
             p_user_id)
     RETURNING id INTO v_email_id;
 
+    -- 👉 добавляем связь с users
+    IF p_user_id IS NOT NULL THEN
+        INSERT INTO user_emails(user_id, email_id)
+        VALUES (p_user_id, v_email_id);
+    END IF;
+
     RETURN v_email_id;
 END;
-$$ LANGUAGE plpgsql;
+$function$;

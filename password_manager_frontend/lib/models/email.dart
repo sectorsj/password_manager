@@ -4,7 +4,7 @@ class Email {
   final int id;
   final String emailAddress;
   final String? emailDescription;
-  final String encryptedPassword;
+  final String rawPassword;
   final int accountId;
   final int? categoryId;
   final int? userId;
@@ -15,7 +15,7 @@ class Email {
     required this.id,
     required this.emailAddress,
     this.emailDescription,
-    required this.encryptedPassword,
+    required this.rawPassword,
     required this.accountId,
     this.categoryId,
     this.userId,
@@ -26,7 +26,8 @@ class Email {
   factory Email.fromJson(Map<String, dynamic> json) => Email(
         id: json['id'],
         emailAddress: json['email_address'],
-        encryptedPassword: json['encrypted_password'] as String,
+        rawPassword: json['encrypted_password'] ?? '',
+        // 💬 сервер отдаёт уже зашифрованный пароль
         emailDescription: json['email_description'],
         accountId: json['account_id'],
         categoryId: json['category_id'],
@@ -43,7 +44,7 @@ class Email {
         'id': id,
         'email_address': emailAddress,
         'email_description': emailDescription,
-        'encrypted_password': encryptedPassword,
+        'raw_password': rawPassword, // 🔑 явно передаём незашифрованный пароль
         'account_id': accountId,
         'category_id': categoryId,
         'user_id': userId,

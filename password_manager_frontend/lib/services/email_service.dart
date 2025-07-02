@@ -3,7 +3,7 @@ import 'package:password_manager_frontend/models/email.dart';
 import 'package:password_manager_frontend/services/base_service.dart';
 
 class EmailService extends BaseService {
-  // Получить все Email для аккаунта
+  // Получить все Email для аккаунта пользователя
   Future<List<Email>> getEmails(int userId) async {
     final jsonData = await get('/emails?user_id=$userId');
     return (jsonData as List).map((item) => Email.fromJson(item)).toList();
@@ -11,14 +11,16 @@ class EmailService extends BaseService {
 
   // Добавить Email
   Future<String> addEmail(Email email) async {
-    final jsonBody = email.toJson();
+    final jsonBody = {
+      'email_address': email.emailAddress,
+      'email_description': email.emailDescription,
+      'raw_password': email.rawPassword, // 🔑 не зашифрованный пароль
+      'account_id': email.accountId,
+      'category_id': email.categoryId,
+      'user_id': email.userId,
+    };
 
     await post('/emails/add', jsonBody);
-
-    // if (email.categoryId == null || email.categoryId == 0) {
-    //   throw Exception('Некорректный categoryId: ${email.categoryId}');
-    // }
-
     print('⚠️ Контроль: Почта добавлена успешно $jsonBody');
     return 'Почта добавлена успешно';
   }

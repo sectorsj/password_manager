@@ -27,53 +27,19 @@ class _AddEmailFormWidgetState extends State<AddEmailFormWidget> {
   final _descriptionController = TextEditingController();
 
   final EmailService _emailService = EmailService();
-  final _secureStorage = const FlutterSecureStorage();
 
-  EncryptionUtility? _encryptionUtility;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadEncryptionUtility();
-  }
-
-  Future<void> _loadEncryptionUtility() async {
-    final aesKey = await _secureStorage.read(key: 'aes_key');
-    if (aesKey == null || aesKey.isEmpty) {
-      print('AES ключ не найден');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('AES ключ не найден. Повторите вход.')),
-      );
-      Navigator.pop(context);
-      return;
-    }
-
-    setState(() {
-      _encryptionUtility = EncryptionUtility.fromSecretPhrase(aesKey);
-      _isLoading = false;
-    });
-  }
+  bool _isLoading = false;
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
-
     print(
-        'DEBUG: accountId=${widget.accountId}, userId=${widget.userId}, categoryId=${widget.categoryId}');
-    if (_encryptionUtility == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ошибка шифрования')),
-      );
-      return;
-    }
-
-    final encryptedPassword =
-        _encryptionUtility!.encryptText(_passwordController.text);
+        '⚠️ Контроль: accountId=${widget.accountId}, userId=${widget.userId}, categoryId=${widget.categoryId}');
 
     final email = Email(
       id: 0,
       emailAddress: _emailController.text,
-      encryptedPassword: encryptedPassword,
+      rawPassword: _passwordController.text,
+      // 🔑 передаём как есть
       emailDescription: _descriptionController.text,
       accountId: widget.accountId,
       categoryId: (widget.categoryId != null && widget.categoryId != 0)
@@ -109,14 +75,16 @@ class _AddEmailFormWidgetState extends State<AddEmailFormWidget> {
                   children: [
                     TextFormField(
                       controller: _emailController,
-                      decoration: const InputDecoration(labelText: 'Email'),
+                      decoration:
+                          const InputDecoration(labelText: 'Электронная почта'),
                       validator: (value) => value == null || value.isEmpty
-                          ? 'Введите email'
+                          ? 'Введите эл. почту'
                           : null,
                     ),
                     TextFormField(
                       controller: _passwordController,
-                      decoration: const InputDecoration(labelText: 'Пароль'),
+                      decoration: const InputDecoration(
+                          labelText: 'Пароль электронной почты'),
                       obscureText: true,
                       validator: (value) => value == null || value.isEmpty
                           ? 'Введите пароль'

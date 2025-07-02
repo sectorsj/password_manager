@@ -99,7 +99,7 @@ class EmailRoutes {
 
       if (result.isEmpty) {
         return Response.notFound(
-          jsonEncode({'error': 'Email не обнаружен'}),
+          jsonEncode({'❌ error': 'Email не обнаружен'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
@@ -116,7 +116,7 @@ class EmailRoutes {
       print('Ошибка при получении расшифрованного пароля: $e');
 
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Ошибка сервера'}),
+        body: jsonEncode({'❌ error': 'Ошибка сервера'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
@@ -128,14 +128,14 @@ class EmailRoutes {
       final userId = request.context['user_id'] as int?;
       if (encryption == null || userId == null) {
         return Response.forbidden(
-          jsonEncode({'error': 'Отсутствует токен или пользователь'}),
+          jsonEncode({'❌ error': 'Отсутствует токен или пользователь'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
 
       final data = jsonDecode(await request.readAsString());
       final emailAddress = data['email_address'] as String?;
-      final rawPassword = data['password'] as String?;
+      final rawPassword = data['raw_password'] as String?;
       final accountId = data['account_id'] as int?;
       final categoryId = data['category_id'] as int?;
       final emailDescription = data['email_description'] as String ?? '';
@@ -143,54 +143,43 @@ class EmailRoutes {
       if ([emailAddress, rawPassword, accountId]
           .any((v) => v == null || v.toString().trim().isEmpty)) {
         return Response.badRequest(
-          body:
-              jsonEncode({'error': 'Некоторые обязательные поля отсутствуют'}),
+          body: jsonEncode(
+              {'❌ error': 'Некоторые обязательные поля отсутствуют'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
 
       final encryptedPassword = encryption.encryptText(rawPassword!);
+
       final result = await connection.execute(
         Sql.named('''
-        INSERT INTO emails (
-          email_address,
-          encrypted_password,
-          email_description,
-          account_id,
-          category_id,
-          user_id,
-          created_at,
-          updated_at
-        ) VALUES (
-          @email_address,
-          @encrypted_password,
-          @email_description,
-          @account_id,
-          @category_id,
-          @user_id,
-          NOW(),
-          NOW()
-        )
-        RETURNING id
-      '''),
+              SELECT create_email_entry(
+                @email_address,
+                @email_description,
+                @encrypted_password,
+                @account_id,
+                @category_id,
+                @user_id
+              )
+            '''),
         parameters: {
           'email_address': emailAddress,
-          'encrypted_password': encryptedPassword,
           'email_description': emailDescription,
+          'encrypted_password': encryptedPassword,
           'account_id': accountId,
           'category_id': categoryId,
           'user_id': userId,
         },
       );
 
-      final insertedId = result.first.toColumnMap()['id'];
+      final insertedId = result.first.toColumnMap().values.first;
 
       return Response.ok(
         jsonEncode({'message': 'Почта успешно добавлена', 'id': insertedId}),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e, stack) {
-      print('Ошибка при добавлении почты: $e');
+      print('❌ Ошибка при добавлении почты: $e');
       print(stack);
       return Response.internalServerError(
         body: jsonEncode({'error': 'Ошибка сервера при добавлении'}),
