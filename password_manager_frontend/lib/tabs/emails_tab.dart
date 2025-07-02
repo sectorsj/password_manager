@@ -16,11 +16,9 @@ class EmailsTab extends StatefulWidget {
 }
 
 class _EmailsTabState extends State<EmailsTab> {
-  // final ApiService apiService = ApiService();
   final EmailService emailService = EmailService();
   List<Email> _emails = [];
-  Map<int, bool> _showPasswordMap =
-      {}; // Отображение пароля для каждого элемента
+  Map<int, bool> _showPasswordMap = {};
   Map<int, String> _decryptedPasswords = {};
 
   @override
@@ -41,12 +39,38 @@ class _EmailsTabState extends State<EmailsTab> {
       });
     } catch (e) {
       if (!mounted) return;
-      print('Ошибка при загрузке email-ов: $e');
+      print('Ошибка при загрузке списка почт: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content:
                 Text('Не удалось загрузить список электронных почт (emails)')),
       );
+    }
+  }
+
+  Future<void> _togglePasswordVisibility(int index, Email email) async {
+    final isVisible = _showPasswordMap[index] ?? false;
+
+    if (!isVisible && !_decryptedPasswords.containsKey(index)) {
+      try {
+        final decrypted = await emailService.getDecryptedPassword(email.id);
+        if (!mounted) return;
+        setState(() {
+          _decryptedPasswords[index] = decrypted;
+          _showPasswordMap[index] = true;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        print('Ошибка при расшифровке пароля: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось расшифровать пароль')),
+        );
+      }
+    } else {
+      if (!mounted) return;
+      setState(() {
+        _showPasswordMap[index] = !isVisible;
+      });
     }
   }
 
@@ -60,14 +84,14 @@ class _EmailsTabState extends State<EmailsTab> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Description: ${email.emailDescription}'),
+              Text('Описание почты: ${email.emailDescription}'),
               // Text('Salt: ${email.salt}'),
-              Text('Category ID: ${email.categoryId}'),
+              Text('Категория: ${email.categoryId}'),
             ],
           ),
           actions: [
             TextButton(
-              child: const Text('Close'),
+              child: const Text('Закрыть'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
@@ -76,29 +100,6 @@ class _EmailsTabState extends State<EmailsTab> {
         );
       },
     );
-  }
-
-  Future<void> _togglePasswordVisibility(int index, Email email) async {
-    final isVisible = _showPasswordMap[index] ?? false;
-
-    if (!isVisible && !_decryptedPasswords.containsKey(index)) {
-      try {
-        final decrypted = await emailService.getDecryptedPassword(email.id);
-        setState(() {
-          _decryptedPasswords[index] = decrypted;
-          _showPasswordMap[index] = true;
-        });
-      } catch (e) {
-        print('Ошибка при расшифровке пароля: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось расшифровать пароль')),
-        );
-      }
-    } else {
-      setState(() {
-        _showPasswordMap[index] = !isVisible;
-      });
-    }
   }
 
   void _addEmail(BuildContext context) async {
@@ -111,12 +112,13 @@ class _EmailsTabState extends State<EmailsTab> {
       context,
       MaterialPageRoute(
           builder: (context) => AddEmailFormWidget(
-              accountId: accountId,
-              // categoryId: categoryId,
-              categoryId: 2,
-              //  // 💡 вручную ставим "почты"
-              // TODO внедрить TabController в HomePage и связывать вкладки с ID категорий.
-              userId: userId)),
+                accountId: accountId,
+                // categoryId: categoryId,
+                categoryId: 2,
+                //  // 💡 вручную ставим "почты"
+                // TODO внедрить TabController в HomePage и связывать вкладки с ID категорий.
+                userId: userId,
+              )),
     );
     _loadEmails();
   }
@@ -141,12 +143,12 @@ class _EmailsTabState extends State<EmailsTab> {
             DataColumn(label: Text('Описание')),
           ],
           rows: _emails.asMap().entries.map((entry) {
-            int index = entry.key;
-            Email email = entry.value;
-
+            final index = entry.key;
+            final email = entry.value;
             // Получаем текущее состояние отображения пароля
-            bool _showPassword = _showPasswordMap[index] ?? false;
-            String decryptedPassword = _decryptedPasswords[index] ?? '';
+            final isVisible = _showPasswordMap[index] ?? false;
+            final decryptedPassword = _decryptedPasswords[index] ?? '';
+
             return DataRow(
               cells: [
                 DataCell(Text((index + 1).toString())),
@@ -156,14 +158,14 @@ class _EmailsTabState extends State<EmailsTab> {
                   children: [
                     // Отображаем пароль или скрываем его
                     Text(
-                      _showPassword
+                      isVisible
                           ? (decryptedPassword.isNotEmpty
                               ? decryptedPassword
                               : '[пароль загружается]')
                           : '****',
                     ),
                     IconButton(
-                        icon: Icon(_showPassword
+                        icon: Icon(isVisible
                             ? Icons.visibility_off
                             : Icons.visibility),
                         onPressed: () =>
@@ -181,7 +183,12 @@ class _EmailsTabState extends State<EmailsTab> {
                     ),
                   ],
                 )),
-                DataCell(Text(email.emailDescription ?? '')),
+                DataCell(
+                  IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    onPressed: () => _showEmailDetails(context, email),
+                  ),
+                ),
                 // email_description
               ],
             );

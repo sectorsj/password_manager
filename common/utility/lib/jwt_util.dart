@@ -90,4 +90,14 @@ class JwtUtil {
       return null;
     }
   }
+
+  /// Проверка, истек ли срок действия токена по payload
+  static bool isTokenExpiredFromPayload(Map<String, dynamic> payload) {
+    final exp = payload['exp'];
+    if (exp is int) {
+      final expiration = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+      return expiration.isBefore(DateTime.now());
+    }
+    return true;
+  }
 }

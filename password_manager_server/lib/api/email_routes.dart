@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:common_utility_package/encryption_utility.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
@@ -7,10 +6,8 @@ import 'package:shelf_router/shelf_router.dart';
 
 class EmailRoutes {
   final Connection connection;
-  final EncryptionUtility encryption;
 
-  EmailRoutes(this.connection, Map<String, String> env)
-      : encryption = EncryptionUtility.fromEnv(env);
+  EmailRoutes(this.connection);
 
   Router get router {
     final router = Router();
@@ -25,6 +22,7 @@ class EmailRoutes {
   Future<Response> _getEmailsByUserId(
     Request request,
   ) async {
+    print('🔍 Контекст запроса: ${request.context}');
     final userIdStr = request.url.queryParameters['user_id'];
     final userId = int.tryParse(userIdStr ?? '');
 
@@ -76,22 +74,26 @@ class EmailRoutes {
   }
 
   Future<Response> _getDecryptedPasswordById(Request request, String id) async {
-    final emailId = int.tryParse(id);
-
-    if (emailId == null) {
-      return Response.badRequest(
-        body: jsonEncode({'error': 'Неверный email ID'}),
-        headers: {'Content-Type': 'application/json'},
-      );
-    }
-
     try {
+      final emailId = int.tryParse(id);
+      final encryption = request.context['encryption'] as EncryptionUtility?;
+
+      if (emailId == null || encryption == null) {
+        return Response.badRequest(
+          body: jsonEncode({
+            'error':
+                'Некорректный идентификатор почты или шифрование отсутствует'
+          }),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
       final result = await connection.execute(
         Sql.named('''
-          SELECT encrypted_password
-          FROM emails
-          WHERE id = @id
-      '''),
+            SELECT encrypted_password
+            FROM emails
+            WHERE id = @id
+        '''),
         parameters: {'id': emailId},
       );
 
@@ -112,6 +114,7 @@ class EmailRoutes {
       );
     } catch (e) {
       print('Ошибка при получении расшифрованного пароля: $e');
+
       return Response.internalServerError(
         body: jsonEncode({'error': 'Ошибка сервера'}),
         headers: {'Content-Type': 'application/json'},
@@ -121,26 +124,32 @@ class EmailRoutes {
 
   Future<Response> _addEmail(Request request) async {
     try {
-      final payload = await request.readAsString();
-      final data = jsonDecode(payload);
-
-      final emailAddress = data['email_address'];
-      final encryptedPassword = data['encrypted_password'];
-      final accountId = data['account_id'];
-      final categoryId = data['category_id'];
-      final userId = data['user_id'];
-      final emailDescription = data['email_description'];
-
-      if (emailAddress == null ||
-          encryptedPassword == null ||
-          accountId == null ||
-          userId == null) {
-        return Response.badRequest(
-          body: jsonEncode({'error': 'Обязательные поля отсутствуют'}),
+      final encryption = request.context['encryption'] as EncryptionUtility?;
+      final userId = request.context['user_id'] as int?;
+      if (encryption == null || userId == null) {
+        return Response.forbidden(
+          jsonEncode({'error': 'Отсутствует токен или пользователь'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
 
+      final data = jsonDecode(await request.readAsString());
+      final emailAddress = data['email_address'] as String?;
+      final rawPassword = data['password'] as String?;
+      final accountId = data['account_id'] as int?;
+      final categoryId = data['category_id'] as int?;
+      final emailDescription = data['email_description'] as String ?? '';
+
+      if ([emailAddress, rawPassword, accountId]
+          .any((v) => v == null || v.toString().trim().isEmpty)) {
+        return Response.badRequest(
+          body:
+              jsonEncode({'error': 'Некоторые обязательные поля отсутствуют'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      final encryptedPassword = encryption.encryptText(rawPassword!);
       final result = await connection.execute(
         Sql.named('''
         INSERT INTO emails (
@@ -177,7 +186,7 @@ class EmailRoutes {
       final insertedId = result.first.toColumnMap()['id'];
 
       return Response.ok(
-        jsonEncode({'message': 'Почта добавлена', 'id': insertedId}),
+        jsonEncode({'message': 'Почта успешно добавлена', 'id': insertedId}),
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e, stack) {

@@ -1,8 +1,8 @@
-import 'package:dotenv/dotenv.dart';
 import 'package:postgres/postgres.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_cors_headers/shelf_cors_headers.dart';
+import 'package:common_utility_package/base_auth_middleware.dart';
 
 import 'api/login_route.dart';
 import 'api/register_route.dart';
@@ -18,7 +18,12 @@ Handler buildHandler(Connection connection, Map<String, String> env) {
     ..mount('/register', RegisterRoute(connection).router)
     ..mount('/accounts', AccountRoutes(connection).router)
     ..mount('/users', UserRoutes(connection).router)
-    ..mount('/emails', EmailRoutes(connection, env).router)
+    ..mount(
+      '/emails',
+      Pipeline()
+          .addMiddleware(baseAuthMiddleware()) // 🔒
+          .addHandler(EmailRoutes(connection).router),
+    )
     ..mount('/websites', WebsiteRoutes(connection, env).router)
     ..mount('/network-connections',
         NetworkConnectionRoutes(connection, env).router);
@@ -28,7 +33,7 @@ Handler buildHandler(Connection connection, Map<String, String> env) {
       .addMiddleware(corsHeaders(headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       }))
       .addHandler(router);
 }

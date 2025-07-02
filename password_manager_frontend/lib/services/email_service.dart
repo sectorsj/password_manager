@@ -11,18 +11,16 @@ class EmailService extends BaseService {
 
   // Добавить Email
   Future<String> addEmail(Email email) async {
-    final jsonBody = email.toJson()
-      ..updateAll((k, v) {
-        if (v is Uint8List) return v.toList();
-        return v;
-      });
-
-    if (email.categoryId == null || email.categoryId == 0) {
-      throw Exception('Некорректный categoryId: ${email.categoryId}');
-    }
+    final jsonBody = email.toJson();
 
     await post('/emails/add', jsonBody);
-    return 'Почта (Email) добавлена успешно';
+
+    // if (email.categoryId == null || email.categoryId == 0) {
+    //   throw Exception('Некорректный categoryId: ${email.categoryId}');
+    // }
+
+    print('⚠️ Контроль: Почта добавлена успешно $jsonBody');
+    return 'Почта добавлена успешно';
   }
 
   Future<String> getDecryptedPassword(int id) async {
