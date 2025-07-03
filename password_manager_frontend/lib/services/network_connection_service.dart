@@ -26,7 +26,7 @@ class NetworkConnectionService extends BaseService {
       'ipv6': conn.ipv6,
       'network_connection_description': conn.networkConnectionDescription,
       'account_id': conn.accountId,
-      'user_id': conn.accountId,
+      'user_id': conn.userId,
       'category_id': conn.categoryId,
     };
 
@@ -43,7 +43,7 @@ class NetworkConnectionService extends BaseService {
       throw Exception('Ошибка при получении расшифрованного пароля');
     }
   }
-  
+
   /// Получить расшифрованный пароль от email
   Future<String> getDecryptedEmailPassword(int id) async {
     final response = await get('/network-connections/$id/email-password');
