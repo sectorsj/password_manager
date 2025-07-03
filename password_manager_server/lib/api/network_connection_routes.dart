@@ -9,10 +9,8 @@ import 'package:shelf_router/shelf_router.dart';
 
 class NetworkConnectionRoutes {
   final Connection connection;
-  final EncryptionUtility encryption;
 
-  NetworkConnectionRoutes(this.connection, Map<String, String> env)
-      : encryption = EncryptionUtility.fromEnv(env);
+  NetworkConnectionRoutes(this.connection);
 
   Router get router {
     final router = Router();
@@ -24,13 +22,20 @@ class NetworkConnectionRoutes {
     return router;
   }
 
+  EncryptionUtility? _getEncryption(Request request) {
+    return request.context['encryption'] as EncryptionUtility?;
+  }
+
+  int? _getUserId(Request request) {
+    return request.context['user_id'] as int?;
+  }
+
   Future<Response> _getNetworkConnectionsByUserId(Request request) async {
-    final userIdStr = request.url.queryParameters['user_id'];
-    final userId = int.tryParse(userIdStr ?? '');
+    final userId = _getUserId(request);
 
     if (userId == null) {
       return Response.badRequest(
-        body: jsonEncode({'error': 'Missing or invalid user_id'}),
+        body: jsonEncode({'error': 'Нет доступа: пользователь не найден'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
@@ -74,7 +79,7 @@ class NetworkConnectionRoutes {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e, stack) {
-      print('Ошибка при получении подключений: $e\n$stack');
+      print('⚠️ Контроль: Ошибка при получении подключений: $e\n$stack');
       return Response.internalServerError(
         body: jsonEncode({'error': 'Ошибка сервера при получении подключений'}),
         headers: {'Content-Type': 'application/json'},
@@ -83,19 +88,25 @@ class NetworkConnectionRoutes {
   }
 
   Future<Response> _getDecryptedPasswordById(Request request, String id) async {
-    final connId = int.tryParse(id);
-
-    if (connId == null) {
-      return Response.badRequest(
-        body: jsonEncode({'error': 'Неверный connection ID'}),
-        headers: {'Content-Type': 'application/json'},
-      );
-    }
-
     try {
+      final connId = int.tryParse(id);
+      final encryption = _getEncryption(request);
+
+      if (connId == null || encryption == null) {
+        return Response.badRequest(
+          body: jsonEncode({
+            'error':
+                'Неверный идентификатор сет.подключения или нет ключа шифрования'
+          }),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
       final result = await connection.execute(Sql.named('''
-        SELECT encrypted_password FROM network_connections WHERE id = @id
-      '''), parameters: {'id': connId});
+              SELECT encrypted_password
+              FROM network_connections
+              WHERE id = @id
+        '''), parameters: {'id': connId});
 
       if (result.isEmpty) {
         return Response.notFound(
@@ -113,7 +124,7 @@ class NetworkConnectionRoutes {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      print('Ошибка при расшифровке пароля: $e');
+      print('⚠️ Контроль: Ошибка при расшифровке пароля: $e');
       return Response.internalServerError(
         body: jsonEncode({'error': 'Ошибка сервера'}),
         headers: {'Content-Type': 'application/json'},
@@ -123,30 +134,35 @@ class NetworkConnectionRoutes {
 
   Future<Response> _addNetworkConnection(Request request) async {
     try {
-      final body = await request.readAsString();
-      final data = jsonDecode(body);
+      final encryption = _getEncryption(request);
+      final userId = _getUserId(request);
 
-      // Основной пароль подключения (обязательный)
-      final rawPassword = data['password'] as String?;
+      if (encryption == null || userId == null) {
+        return Response.forbidden(
+          jsonEncode({'error': 'Нет доступа: не найден ключ или пользователь'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+      final data = jsonDecode(await request.readAsString());
+      final rawPassword = data['raw_password'] as String;
       final encryptedPassword =
-          rawPassword != null ? encryption.encryptText(rawPassword) : null;
-
-      // Email-пароль (необязательный)
-      final rawEmailPassword = data['email_password'] as String?;
-      final encryptedEmailPassword = rawEmailPassword != null
-          ? encryption.encryptText(rawEmailPassword)
-          : '';
-
+          rawPassword != null && rawPassword.trim().isNotEmpty
+              ? encryption.encryptText(rawPassword)
+              : null;
+      final rawEmailPassword = data['raw_email_password'] as String?;
+      final encryptedEmailPassword =
+          rawEmailPassword != null && rawEmailPassword.trim().isNotEmpty
+              ? encryption.encryptText(rawEmailPassword)
+              : null;
       final connectionName = data['network_connection_name'] as String?;
       final ipv4 = data['ipv4'] as String?;
       final ipv6 = data['ipv6'] as String?;
       final nickname = data['nickname'] as String?;
-      final emailAddress = data['email_address'] as String?;
+      final emailAddress = data['network_connection_email'] as String?;
       final description = data['network_connection_description'] as String?;
       final emailDescription = data['email_description'] as String?;
       final accountId = data['account_id'] as int?;
       final categoryId = data['category_id'] as int?;
-      final userId = data['user_id'] as int?;
 
       if ([
         encryptedPassword,
@@ -174,7 +190,7 @@ class NetworkConnectionRoutes {
         @ipv6,
         @description,
         @emailAddress,
-        @emailPassword,
+        @emailEncryptedPassword,
         @emailDescription
       )
     '''), parameters: {
@@ -188,7 +204,7 @@ class NetworkConnectionRoutes {
         'ipv6': ipv6,
         'description': description,
         'emailAddress': emailAddress,
-        'emailPassword': encryptedEmailPassword,
+        'emailEncryptedPassword': encryptedEmailPassword,
         'emailDescription': emailDescription,
       });
 

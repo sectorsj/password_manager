@@ -1,6 +1,4 @@
-import 'package:common_utility_package/encryption_utility.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:password_manager_frontend/models/network_connection.dart';
 import 'package:password_manager_frontend/services/network_connection_service.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
@@ -27,34 +25,53 @@ class _AddNetworkConnectionFormWidgetState
     extends State<AddNetworkConnectionFormWidget> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _userNicknameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _emailPasswordController = TextEditingController();
   final _ipv4Controller = TextEditingController();
   final _ipv6Controller = TextEditingController();
-  final _loginController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  final NetworkConnectionService _service = NetworkConnectionService();
   bool _isLoading = false;
+  final NetworkConnectionService _service = NetworkConnectionService();
 
   Future<void> _submitForm() async {
+    print(' Отправка данных на сервер пр создании сетевого подключения:');
+    print('⚠️ Название подключения: ${_nameController.text}');
+    print('⚠️ Ник пользователя: ${_userNicknameController.text}');
+    print('⚠️ Пароль сетевого подключения: ${_passwordController.text}');
+    print('⚠️ Электронная почта: ${_emailController.text}');
+    print('⚠️ Пароль электронной почты: ${_emailPasswordController.text}');
+    print('⚠️ ipv4 адрес: ${_ipv4Controller.text}');
+    print('⚠️ ipv6 адрес: ${_ipv6Controller.text}');
+    print('⚠️ Описание сетевого подключения: ${_descriptionController.text}');
+
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
-    final authService = Provider.of<AuthService>(context, listen: false);
+    print('⚠️ Контроль: $_isLoading');
+
     final connection = NetworkConnection(
       id: 0,
       networkConnectionName: _nameController.text,
-      ipv4: _ipv4Controller.text.isNotEmpty ? _ipv4Controller.text : null,
-      ipv6: _ipv6Controller.text.isNotEmpty ? _ipv6Controller.text : null,
-      password: _passwordController.text,
-      // \u2705 plain password (ИСПРАВЛЕНО)
-      networkConnectionDescription: _descriptionController.text,
-      accountId: widget.accountId,
-      userId: authService.userId,
+      nickname: _userNicknameController.text,
+      rawPassword: _passwordController.text,
       networkConnectionEmail: _emailController.text.trim().isEmpty
           ? null
           : _emailController.text.trim(),
-      nickname: _loginController.text,
+      rawEmailPassword: _emailPasswordController.text,
+      ipv4: _ipv4Controller.text.isNotEmpty
+          ? _ipv4Controller.text
+          : _ipv4Controller.text.trim(),
+      ipv6: _ipv6Controller.text.isNotEmpty
+          ? _ipv6Controller.text
+          : _ipv6Controller.text.trim(),
+      networkConnectionDescription: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+      accountId: widget.accountId,
+      userId: widget.userId,
       categoryId: widget.categoryId ?? 3,
     );
     try {
@@ -97,8 +114,9 @@ class _AddNetworkConnectionFormWidgetState
                             : null,
                       ),
                       TextFormField(
-                        controller: _loginController,
-                        decoration: const InputDecoration(labelText: 'Логин'),
+                        controller: _userNicknameController,
+                        decoration: const InputDecoration(
+                            labelText: 'Ник пользователя'),
                         validator: (value) => value == null || value.isEmpty
                             ? 'Введите логин'
                             : null,
@@ -117,6 +135,15 @@ class _AddNetworkConnectionFormWidgetState
                             labelText: 'Эл. почта (необязательно)'),
                       ),
                       TextFormField(
+                        controller: _emailPasswordController,
+                        decoration: const InputDecoration(
+                            labelText: 'Пароль от эл. почты'),
+                        obscureText: true,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Введите пароль от email'
+                            : null,
+                      ),
+                      TextFormField(
                         controller: _ipv4Controller,
                         decoration: const InputDecoration(
                             labelText: 'IPv4 (необязательно)'),
@@ -129,7 +156,7 @@ class _AddNetworkConnectionFormWidgetState
                       TextFormField(
                         controller: _descriptionController,
                         decoration: const InputDecoration(
-                            labelText: 'Описание (необязательно)'),
+                            labelText: 'Описание подключения (необязательно)'),
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(

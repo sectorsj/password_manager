@@ -14,15 +14,21 @@ class NetworkConnectionService extends BaseService {
   }
 
   // ✅ Добавить сетевое подключение
-  // 🔄 открытый пароль теперь шифруется на сервере
+  // 🔄 открытый пароль шифруется на сервере
   Future<String> addNetworkConnection(NetworkConnection conn) async {
-    final jsonBody = Map<String, dynamic>.from(conn.toJson())
-      ..removeWhere((key, value) =>
-          value == null || (value is String && value.trim().isEmpty))
-      ..updateAll((k, v) {
-        if (v is Uint8List) return v.toList();
-        return v;
-      });
+    final jsonBody = {
+      'network_connection_name': conn.networkConnectionName,
+      'nickname': conn.nickname,
+      'raw_password': conn.rawPassword, // пароль подключения в открытом виде
+      'network_connection_email': conn.networkConnectionEmail,
+      'raw_email_password': conn.rawEmailPassword, // пароль от email
+      'ipv4': conn.ipv4,
+      'ipv6': conn.ipv6,
+      'network_connection_description': conn.networkConnectionDescription,
+      'account_id': conn.accountId,
+      'user_id': conn.accountId,
+      'category_id': conn.categoryId,
+    };
 
     await post('/network-connections/add', jsonBody);
     return 'Сетевое подключение добавлено успешно';
@@ -35,6 +41,16 @@ class NetworkConnectionService extends BaseService {
       return response['decrypted_password'];
     } else {
       throw Exception('Ошибка при получении расшифрованного пароля');
+    }
+  }
+  
+  /// Получить расшифрованный пароль от email
+  Future<String> getDecryptedEmailPassword(int id) async {
+    final response = await get('/network-connections/$id/email-password');
+    if (response is Map && response.containsKey('decrypted_email_password')) {
+      return response['decrypted_email_password'];
+    } else {
+      throw Exception('Ошибка при получении email-пароля');
     }
   }
 }
