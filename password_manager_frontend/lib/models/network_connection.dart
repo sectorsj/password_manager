@@ -62,6 +62,7 @@ class NetworkConnection {
   Map<String, dynamic> toJson() => {
         'id': id,
         'network_connection_name': networkConnectionName,
+        'nickname': nickname,
         'raw_password': rawPassword,
         'network_connection_email': networkConnectionEmail,
         'raw_email_password': rawEmailPassword,
@@ -70,7 +71,6 @@ class NetworkConnection {
         'network_connection_description': networkConnectionDescription,
         'account_id': accountId,
         'user_id': userId,
-        'nickname': nickname,
         'email_id': emailId,
         'category_id': categoryId,
         'created_at': createdAt?.toIso8601String(),
