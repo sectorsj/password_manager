@@ -28,6 +28,7 @@ class _HomePageState extends State<HomePage> {
     final String loginText =
         'Привет, ${widget.user.userName ?? 'пользователь'}';
     final authService = Provider.of<AuthService>(context, listen: false);
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -71,43 +72,77 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        body: Column(
+
+        // ✅ Тело приложения
+        body: const TabBarView(
           children: [
-            if (_showBanner)
-              MaterialBanner(
-                content: const Text('''
-                   Вас приветствует команда InIT! 🎉\n
-                   Спасибо, что согласились принять участие в альфа-тестировании нашего приложения. Это важный этап, и ваша помощь особенно ценна.\n
-                   ⚠️ Важно: не используйте настоящие персональные данные — в случае ошибок они могут быть утеряны.
-                    '''),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const WelcomePreviewPage()),
-                      );
-                    },
-                    child: const Text('Открыть превью'),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => _showBanner = false),
-                    child: const Text('Закрыть'),
-                  ),
-                ],
-              ),
-            const Expanded(
-              child: TabBarView(
-                children: [
-                  EmailsTab(),
-                  NetworkConnectionsTab(),
-                  WebsitesTab(),
-                ],
-              ),
-            ),
+            EmailsTab(),
+            NetworkConnectionsTab(),
+            WebsitesTab(),
           ],
         ),
+
+        // ✅ Баннер — ниже AppBar, выше TabBarView
+        persistentFooterButtons: _showBanner
+            ? [
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.yellow.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber),
+                  ),
+                  child: Stack(
+                    children: [
+                      // 🔺 Закрыть (в правом верхнем углу)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => setState(() => _showBanner = false),
+                          tooltip: 'Закрыть',
+                        ),
+                      ),
+                      // 🔹 Содержимое баннера
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.only(top: 8.0, right: 32),
+                            child: Text(
+                              'Вас приветствует команда InIT! 🎉\n\n'
+                              'Спасибо, что согласились принять участие в альфа-тестировании нашего приложения. '
+                              'Это важный этап, и ваша помощь особенно ценна.\n\n'
+                              '⚠️ Пожалуйста, не используйте настоящие персональные данные — '
+                              'в случае ошибок они могут быть безвозвратно утеряны.',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Center(
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const WelcomePreviewPage()),
+                                );
+                              },
+                              child: const Text('Подробнее'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ]
+            : null,
       ),
     );
   }

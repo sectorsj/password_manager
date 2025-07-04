@@ -37,6 +37,7 @@ dependencies:
   common_utility_package:
     path: ../common/utility
   jwt_decode: ^0.3.0  # Последняя версия на момент написания
+  url_launcher: ^6.2.1
 
 dev_dependencies:
   flutter_test:
