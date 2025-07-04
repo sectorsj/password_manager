@@ -95,7 +95,7 @@ class _AddNetworkConnectionFormWidgetState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Добавить подключение')),
+      appBar: AppBar(title: const Text('Добавить сетевое подключение')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Form(
@@ -118,12 +118,13 @@ class _AddNetworkConnectionFormWidgetState
                         decoration: const InputDecoration(
                             labelText: 'Ник пользователя'),
                         validator: (value) => value == null || value.isEmpty
-                            ? 'Введите логин'
+                            ? 'Введите никнейм'
                             : null,
                       ),
                       TextFormField(
                         controller: _passwordController,
-                        decoration: const InputDecoration(labelText: 'Пароль'),
+                        decoration: const InputDecoration(
+                            labelText: 'Пароль сетевого подключения'),
                         obscureText: true,
                         validator: (value) => value == null || value.isEmpty
                             ? 'Введите пароль'
@@ -137,10 +138,10 @@ class _AddNetworkConnectionFormWidgetState
                       TextFormField(
                         controller: _emailPasswordController,
                         decoration: const InputDecoration(
-                            labelText: 'Пароль от эл. почты'),
+                            labelText: 'Пароль эл. почты'),
                         obscureText: true,
                         validator: (value) => value == null || value.isEmpty
-                            ? 'Введите пароль от email'
+                            ? 'Введите пароль'
                             : null,
                       ),
                       TextFormField(

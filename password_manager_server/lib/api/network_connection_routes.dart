@@ -144,21 +144,22 @@ class NetworkConnectionRoutes {
         );
       }
       final data = jsonDecode(await request.readAsString());
+
+      final connectionName = data['network_connection_name'] as String?;
+      final nickname = data['nickname'] as String?;
       final rawPassword = data['raw_password'] as String;
       final encryptedPassword =
           rawPassword != null && rawPassword.trim().isNotEmpty
               ? encryption.encryptText(rawPassword)
               : null;
+      final emailAddress = data['network_connection_email'] as String?;
       final rawEmailPassword = data['raw_email_password'] as String?;
       final encryptedEmailPassword =
           rawEmailPassword != null && rawEmailPassword.trim().isNotEmpty
               ? encryption.encryptText(rawEmailPassword)
               : null;
-      final connectionName = data['network_connection_name'] as String?;
       final ipv4 = data['ipv4'] as String?;
       final ipv6 = data['ipv6'] as String?;
-      final nickname = data['nickname'] as String?;
-      final emailAddress = data['network_connection_email'] as String?;
       final description = data['network_connection_description'] as String?;
       final emailDescription = data['email_description'] as String?;
       final accountId = data['account_id'] as int?;
