@@ -15,14 +15,13 @@ CREATE OR REPLACE FUNCTION public.create_network_connection_with_nickname_and_em
     RETURNS BIGINT
     LANGUAGE plpgsql
 AS
-$$
+$function$
 DECLARE
-    nickname_id         BIGINT;
-    email_id            BIGINT;
-    new_connection_id   BIGINT;
-    v_email_description TEXT;
+    nickname_id       BIGINT;
+    email_id          BIGINT;
+    new_connection_id BIGINT;
 BEGIN
-    -- 1. Проверка и добавление никнейма
+    -- 1. Никнейм
     SELECT id
     INTO nickname_id
     FROM nicknames
@@ -38,7 +37,7 @@ BEGIN
     VALUES (p_user_id, nickname_id)
     ON CONFLICT DO NOTHING;
 
-    -- 2. Проверка и добавление email (если указан)
+    -- 2. Email (если указан)
     IF p_email_address IS NOT NULL AND LENGTH(TRIM(p_email_address)) > 0 THEN
         SELECT id
         INTO email_id
@@ -46,20 +45,18 @@ BEGIN
         WHERE email_address = p_email_address;
 
         IF email_id IS NULL THEN
-            -- дефолтное описание, если не указано
-            v_email_description :=
-                    COALESCE(p_email_description, 'почта создана при создании нового сетевого подключения');
-
             INSERT INTO emails (email_address,
                                 encrypted_password,
                                 account_id,
                                 user_id,
+                                category_id,
                                 email_description)
             VALUES (p_email_address,
                     COALESCE(p_email_encrypted_password, ''),
                     p_account_id,
                     p_user_id,
-                    v_email_description)
+                    3,
+                    'Почта создана при создании нового сетевого подключения')
             RETURNING id INTO email_id;
         END IF;
 
@@ -68,7 +65,7 @@ BEGIN
         ON CONFLICT DO NOTHING;
     END IF;
 
-    -- 3. Вставка новой записи в network_connections
+    -- 3. Сетевое подключение
     INSERT INTO network_connections (account_id,
                                      category_id,
                                      encrypted_password,
@@ -93,4 +90,4 @@ BEGIN
 
     RETURN new_connection_id;
 END;
-$$;
+$function$;
