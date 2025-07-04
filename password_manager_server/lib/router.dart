@@ -24,11 +24,16 @@ Handler buildHandler(Connection connection, Map<String, String> env) {
           .addMiddleware(baseAuthMiddleware()) // 🔒
           .addHandler(EmailRoutes(connection).router),
     )
-    ..mount('/websites', WebsiteRoutes(connection, env).router)
+    ..mount(
+      '/websites',
+      Pipeline()
+          .addMiddleware(baseAuthMiddleware()) // 🔒
+          .addHandler(WebsiteRoutes(connection).router),
+    )
     ..mount(
         '/network-connections',
         Pipeline()
-            .addMiddleware(baseAuthMiddleware())
+            .addMiddleware(baseAuthMiddleware()) // 🔒
             .addHandler(NetworkConnectionRoutes(connection).router));
 
   return Pipeline()

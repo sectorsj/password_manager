@@ -25,79 +25,64 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _urlController = TextEditingController();
-  final _loginController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _userNicknameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _emailPasswordController = TextEditingController();
   final _descriptionController = TextEditingController();
 
+  bool _isLoading = false;
   final WebsiteService _websiteService = WebsiteService();
-  final _secureStorage = const FlutterSecureStorage();
-
-  EncryptionUtility? _encryptionUtility;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadEncryptionUtility();
-  }
-
-  Future<void> _loadEncryptionUtility() async {
-    final aesKey = await _secureStorage.read(key: 'aes_key');
-    if (aesKey == null || aesKey.isEmpty) {
-      print('AES ключ не найден');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('AES ключ не найден. Повторите вход.')),
-      );
-      Navigator.pop(context);
-      return;
-    }
-
-    setState(() {
-      _encryptionUtility = EncryptionUtility.fromSecretPhrase(aesKey);
-      _isLoading = false;
-    });
-  }
 
   Future<void> _submitForm() async {
+    print(' Отправка данных на сервер при создании нового вебсайта:');
+    print('⚠️ Название вебсайта: ${_nameController.text}');
+    print('⚠️ URL адрес вебсайта: ${_urlController.text}');
+    print('⚠️ Ник пользователя: ${_userNicknameController.text}');
+    print('⚠️ Пароль вебсайта: ${_passwordController.text}');
+    print('⚠️ Электронная почта: ${_emailController.text}');
+    print('⚠️ Пароль электронной почты: ${_emailPasswordController.text}');
+    print('⚠️ Описание вебсайта: ${_descriptionController.text}');
+
     if (!_formKey.currentState!.validate()) return;
 
-    if (_encryptionUtility == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ошибка шифрования')),
-      );
-      return;
-    }
+    setState(() => _isLoading = true);
+    print('⚠️ Контроль: $_isLoading');
 
     final website = Website(
       id: 0,
       websiteName: _nameController.text,
       websiteUrl: _urlController.text,
-      nicknameId: 0,
-      // временно 0, логин пойдёт как nickname
-      nickname: _loginController.text,
+      nickname: _userNicknameController.text,
+      rawPassword: _passwordController.text,
       websiteEmail: _emailController.text.trim().isEmpty
           ? null
           : _emailController.text.trim(),
-      password: _passwordController.text,
+      rawEmailPassword: _emailPasswordController.text,
       websiteDescription: _descriptionController.text,
       accountId: widget.accountId,
+      userId: widget.userId,
       categoryId: widget.categoryId ?? 3,
       // 💡 по умолчанию — категория для сайтов
-      userId: widget.userId,
+      nicknameId: 0,
+      // временно 0, логин пойдёт как nickname
     );
 
     try {
       final result = await _websiteService.addWebsite(website);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result)),
       );
       Navigator.pop(context);
     } catch (e) {
       print('Ошибка при добавлении: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ошибка при добавлении сайта')),
       );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -130,10 +115,20 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
                             : null,
                       ),
                       TextFormField(
-                        controller: _loginController,
-                        decoration: const InputDecoration(labelText: 'Логин'),
+                        controller: _userNicknameController,
+                        decoration: const InputDecoration(
+                            labelText: 'Ник пользователя'),
                         validator: (value) => value == null || value.isEmpty
-                            ? 'Введите логин'
+                            ? 'Введите никнейм'
+                            : null,
+                      ),
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration:
+                            const InputDecoration(labelText: 'Пароль вебсайта'),
+                        obscureText: true,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Введите пароль'
                             : null,
                       ),
                       TextFormField(
@@ -142,8 +137,9 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
                             labelText: 'Эл. почта (необязательно)'),
                       ),
                       TextFormField(
-                        controller: _passwordController,
-                        decoration: const InputDecoration(labelText: 'Пароль'),
+                        controller: _emailPasswordController,
+                        decoration: const InputDecoration(
+                            labelText: 'Пароль эл. почты'),
                         obscureText: true,
                         validator: (value) => value == null || value.isEmpty
                             ? 'Введите пароль'

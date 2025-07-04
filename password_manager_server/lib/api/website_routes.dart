@@ -7,10 +7,8 @@ import 'package:shelf_router/shelf_router.dart';
 
 class WebsiteRoutes {
   final Connection connection;
-  final EncryptionUtility encryption;
 
-  WebsiteRoutes(this.connection, Map<String, String> env)
-      : encryption = EncryptionUtility.fromEnv(env);
+  WebsiteRoutes(this.connection);
 
   Router get router {
     final router = Router();
@@ -22,13 +20,20 @@ class WebsiteRoutes {
     return router;
   }
 
+  EncryptionUtility? _getEncryption(Request request) {
+    return request.context['encryption'] as EncryptionUtility?;
+  }
+
+  int? _getUserId(Request request) {
+    return request.context['user_id'] as int?;
+  }
+
   Future<Response> _getWebsiteByUserId(Request request) async {
-    final userIdStr = request.url.queryParameters['user_id'];
-    final userId = int.tryParse(userIdStr ?? '');
+    final userId = _getUserId(request);
 
     if (userId == null) {
       return Response.badRequest(
-        body: jsonEncode({'error': 'Отсутствует или неверный user id'}),
+        body: jsonEncode({'error': 'Нет доступа: пользователь не найден'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
@@ -74,9 +79,9 @@ class WebsiteRoutes {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e, stack) {
-      print('Ошибка при получении сайтов: $e\n$stack');
+      print('⚠️ Контроль: Ошибка при получении сайтов: $e\n$stack');
       return Response.internalServerError(
-        body: jsonEncode({'error': 'Ошибка сервера при получении сайтов'}),
+        body: jsonEncode({'error': 'Ошибка сервера при получении вебсайтов'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
@@ -85,23 +90,29 @@ class WebsiteRoutes {
   Future<Response> _getDecryptedWebsitePasswordById(
       Request request, String id) async {
     final websiteId = int.tryParse(id);
+    final encryption = _getEncryption(request);
 
-    if (websiteId == null) {
+    if (websiteId == null || encryption == null) {
       return Response.badRequest(
-        body: jsonEncode({'error': 'Неверный website ID'}),
+        body: jsonEncode({
+          'error': 'Неверный идентификатор вебсайта или нет ключа шифрования'
+        }),
         headers: {'Content-Type': 'application/json'},
       );
     }
 
     try {
       final result = await connection.execute(
-        Sql.named('SELECT encrypted_password FROM websites WHERE id = @id'),
+        Sql.named('''
+           SELECT encrypted_password
+           FROM websites WHERE id = @id
+        '''),
         parameters: {'id': websiteId},
       );
 
       if (result.isEmpty) {
         return Response.notFound(
-          jsonEncode({'error': 'Website не найден'}),
+          jsonEncode({'error': 'Вебсайт не найден'}),
           headers: {'Content-Type': 'application/json'},
         );
       }
@@ -115,7 +126,7 @@ class WebsiteRoutes {
         headers: {'Content-Type': 'application/json'},
       );
     } catch (e) {
-      print('Ошибка при получении расшифрованного пароля: $e');
+      print('⚠️ Контроль: Ошибка при расшифровке пароля: $e');
       return Response.internalServerError(
         body: jsonEncode({'error': 'Ошибка сервера'}),
         headers: {'Content-Type': 'application/json'},
@@ -125,29 +136,38 @@ class WebsiteRoutes {
 
   Future<Response> _addWebsite(Request request) async {
     try {
-      final body = await request.readAsString();
-      final data = jsonDecode(body);
+      final encryption = _getEncryption(request);
+      final userId = _getUserId(request);
 
-      // Основной пароль сайта
-      final rawPassword = data['password'] as String?;
-      final encryptedPassword =
-          rawPassword != null ? encryption.encryptText(rawPassword) : null;
+      if (encryption == null || userId == null) {
+        return Response.forbidden(
+          jsonEncode({'error': 'Нет доступа: не найден ключ или пользователь'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
 
-      // Email-пароль (необязательный)
-      final rawEmailPassword = data['email_password'] as String?;
-      final encryptedEmailPassword = rawEmailPassword != null
-          ? encryption.encryptText(rawEmailPassword)
-          : '';
+      final data = jsonDecode(await request.readAsString());
 
       final websiteName = data['website_name'] as String?;
       final websiteUrl = data['website_url'] as String?;
       final nickname = data['nickname'] as String?;
-      final emailAddress = data['email_address'] as String?;
+      final rawPassword =
+          data['raw_password'] as String?; // Основной пароль сайта
+      final encryptedPassword =
+          rawPassword != null && rawPassword.trim().isNotEmpty
+              ? encryption.encryptText(rawPassword)
+              : null;
+      final emailAddress = data['website_email'] as String?;
+      final rawEmailPassword = data['raw_email_password'] as String?;
+      // Email-пароль (необязательный)
+      final encryptedEmailPassword =
+          rawEmailPassword != null && rawEmailPassword.trim().isNotEmpty
+              ? encryption.encryptText(rawEmailPassword)
+              : null;
       final websiteDescription = data['website_description'] as String?;
       final emailDescription = data['email_description'] as String?;
       final accountId = data['account_id'] as int?;
       final categoryId = data['category_id'] as int?;
-      final userId = data['user_id'] as int?;
 
       if ([
         websiteName,
@@ -159,8 +179,7 @@ class WebsiteRoutes {
         userId,
       ].any((v) => v == null || (v is String && v.trim().isEmpty))) {
         return Response.badRequest(
-          body:
-              jsonEncode({'error': 'Некоторые обязательные поля отсутствуют'}),
+          body: jsonEncode({'error': 'Отсутствуют обязательные поля'}),
           headers: {'Content-Type': 'application/json'},
         );
       }

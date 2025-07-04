@@ -1,26 +1,27 @@
 CREATE OR REPLACE FUNCTION public.create_website_with_nickname_and_email(
-    p_account_id bigint,
-    p_user_id bigint,
-    p_category_id bigint,
-    p_nickname text,
-    p_encrypted_password text,
-    p_website_name character varying,
-    p_website_url character varying,
-    p_website_description text DEFAULT NULL::text,
-    p_email_address text DEFAULT NULL::text,
-    p_email_password text DEFAULT NULL::text,
-    p_email_description text DEFAULT NULL::text
+    p_account_id BIGINT,
+    p_user_id BIGINT,
+    p_category_id BIGINT,
+    p_nickname TEXT,
+    p_encrypted_password TEXT,
+    p_website_name VARCHAR,
+    p_website_url VARCHAR,
+    p_website_description TEXT DEFAULT NULL,
+    p_email_address TEXT DEFAULT NULL,
+    p_email_encrypted_password TEXT DEFAULT NULL,
+    p_email_description TEXT DEFAULT NULL
 )
-    RETURNS bigint
+    RETURNS BIGINT
     LANGUAGE plpgsql
 AS
-$function$
+$$
 DECLARE
-    nickname_id    BIGINT;
-    email_id       BIGINT;
-    new_website_id BIGINT;
+    nickname_id         BIGINT;
+    email_id            BIGINT;
+    new_website_id      BIGINT;
+    v_email_description TEXT;
 BEGIN
-    -- 1. Проверка и добавление никнейма
+    -- 1. Никнейм
     SELECT id
     INTO nickname_id
     FROM nicknames
@@ -28,7 +29,7 @@ BEGIN
 
     IF nickname_id IS NULL THEN
         INSERT INTO nicknames (nickname, account_id, user_id)
-        VALUES (p_nickname, p_account_id, p_user_id) -- передаем user_id
+        VALUES (p_nickname, p_account_id, p_user_id)
         RETURNING id INTO nickname_id;
     END IF;
 
@@ -36,7 +37,7 @@ BEGIN
     VALUES (p_user_id, nickname_id)
     ON CONFLICT DO NOTHING;
 
-    -- 2. Проверка и добавление email
+    -- 2. Email (если указан)
     IF p_email_address IS NOT NULL AND LENGTH(TRIM(p_email_address)) > 0 THEN
         SELECT id
         INTO email_id
@@ -44,16 +45,19 @@ BEGIN
         WHERE email_address = p_email_address;
 
         IF email_id IS NULL THEN
+            -- Используем дефолтное описание, если не передано
+            v_email_description := COALESCE(p_email_description, 'почта создана при создании нового вебсайта');
+
             INSERT INTO emails (email_address,
                                 encrypted_password,
                                 account_id,
                                 user_id,
                                 email_description)
             VALUES (p_email_address,
-                    COALESCE(p_email_password, ''),
+                    COALESCE(p_email_encrypted_password, ''),
                     p_account_id,
                     p_user_id,
-                    p_email_description)
+                    v_email_description)
             RETURNING id INTO email_id;
         END IF;
 
@@ -62,7 +66,7 @@ BEGIN
         ON CONFLICT DO NOTHING;
     END IF;
 
-    -- 3. Вставка новой записи в таблицу websites
+    -- 3. Вставка сайта
     INSERT INTO websites (account_id,
                           category_id,
                           encrypted_password,
@@ -80,9 +84,9 @@ BEGIN
             p_website_description,
             p_user_id,
             nickname_id,
-            email_id) -- Убедитесь, что email_id здесь правильно передается
+            email_id)
     RETURNING id INTO new_website_id;
 
     RETURN new_website_id;
 END;
-$function$;
+$$;
