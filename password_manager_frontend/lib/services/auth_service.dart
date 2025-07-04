@@ -51,37 +51,30 @@ class AuthService extends ChangeNotifier {
   /// Устанавливает сессию из JWT токена
   Future<void> setSessionFromToken(String jwtToken) async {
     try {
-      // Получаем aesKey напрямую из SecureStorage
-      final aesKey = await SecureStorageHelper.getAesKey();
+      // ✅ Верифицируем токен без aesKey
+      final payload = JwtUtil.extractData(jwtToken);
 
-      if (aesKey == null || aesKey.isEmpty) {
-        throw Exception('AES ключ отсутствует в токене');
-      }
-
-      final jwt = JwtUtil.verifyToken(
-          jwtToken, aesKey); // Используем aesKey для верификации
-
-      // Используем JwtUtil для работы с токеном
-      if (jwt == null || JwtUtil.isTokenExpired(jwt)) {
+      if (payload == null || JwtUtil.isTokenExpiredFromPayload(payload)) {
         throw Exception('Токен недействителен или просрочен');
       }
 
-      // Извлекаем данные из JWT токена
-      final accountId = int.parse(jwt.payload['account_id'].toString());
-      final userId = int.parse(jwt.payload['user_id'].toString());
-      final _categoryId = 0;
+      // ✅ Извлекаем данные напрямую из payload
+      final aesKey = payload['aes_key'] as String?;
+      final accountId = int.tryParse(payload['account_id'].toString());
+      final userId = int.tryParse(payload['user_id'].toString());
 
-      await SecureStorageHelper.setAesKey(aesKey);
-
-      if (accountId == null || userId == null) {
+      if (aesKey == null ||
+          aesKey.isEmpty ||
+          accountId == null ||
+          userId == null) {
         throw Exception('Некорректные данные в токене');
       }
 
+      // ✅ Сохраняем ключ и токен в хранилище
+      await SecureStorageHelper.setAesKey(aesKey);
+      await SecureStorageHelper.setJwtToken(jwtToken);
+
       await setSession(accountId: accountId, userId: userId);
-
-      final prefs = await SharedPreferences.getInstance();
-
-      await prefs.setString('jwt_token', jwtToken);
 
       notifyListeners();
     } catch (e) {
