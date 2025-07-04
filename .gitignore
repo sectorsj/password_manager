@@ -155,3 +155,4 @@ common/utility/analysis_options.yaml
 password_manager_frontend/analysis_options.yaml
 .swift
 .env
+!/password_manager_frontend/android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java

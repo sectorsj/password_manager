@@ -65,4 +65,9 @@ password_manager_server/.env
                  # project includes source files written in JavaScript.
 *.js_
 *.js.deps
-*.js.map
+
+# Автогенерируемые файлы плагинов
+**/GeneratedPluginRegistrant.java
+**/generated_plugin_registrant.cc
+**/generated_plugins.cmake
+**/GeneratedPluginRegistrant.swift
