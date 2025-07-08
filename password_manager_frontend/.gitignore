@@ -71,3 +71,4 @@ password_manager_server/.env
 **/generated_plugin_registrant.cc
 **/generated_plugins.cmake
 **/GeneratedPluginRegistrant.swift
+**/flutter/ephemeral/
