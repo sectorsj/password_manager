@@ -27,8 +27,8 @@ Future<void> main() async {
     final connection = await createConnection(env);
     final handler = buildHandler(connection, env);
 
-    final port = int.parse(env['PORT'] ?? '8080');
-    print('🧪 Попытка запустить сервер на ${env['PORT'] ?? '8080'}');
+    final port = int.parse(env['SERVER_PORT'] ?? '8080');
+    print('🧪 Попытка запустить сервер на ${env['SERVER_PORT'] ?? '8080'}');
     final server = await shelf_io.serve(handler, '0.0.0.0', port);
     print('🚀 Сервер запущен на https://${server.address.host}:${server.port}');
   } catch (e) {
