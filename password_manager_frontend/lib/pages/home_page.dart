@@ -13,8 +13,7 @@ class HomePage extends StatefulWidget {
   final Account account;
   final User user;
 
-  const HomePage({Key? key, required this.account, required this.user})
-      : super(key: key);
+  const HomePage({super.key, required this.account, required this.user});
 
   @override
   State<HomePage> createState() => _HomePageState();

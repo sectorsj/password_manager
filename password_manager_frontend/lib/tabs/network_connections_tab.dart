@@ -7,7 +7,7 @@ import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/widgets/add_network_connection_form_widget.dart';
 
 class NetworkConnectionsTab extends StatefulWidget {
-  const NetworkConnectionsTab({Key? key}) : super(key: key);
+  const NetworkConnectionsTab({super.key});
 
   @override
   _NetworkConnectionsTabState createState() => _NetworkConnectionsTabState();

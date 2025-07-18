@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:password_manager_frontend/models/network_connection.dart';
 import 'package:password_manager_frontend/services/network_connection_service.dart';
-import 'package:password_manager_frontend/services/auth_service.dart';
-import 'package:provider/provider.dart';
 
 class AddNetworkConnectionFormWidget extends StatefulWidget {
   final int accountId;
@@ -10,11 +8,11 @@ class AddNetworkConnectionFormWidget extends StatefulWidget {
   final int? userId;
 
   const AddNetworkConnectionFormWidget({
-    Key? key,
+    super.key,
     required this.accountId,
     this.categoryId,
     this.userId,
-  }) : super(key: key);
+  });
 
   @override
   _AddNetworkConnectionFormWidgetState createState() =>

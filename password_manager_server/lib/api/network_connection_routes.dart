@@ -149,7 +149,7 @@ class NetworkConnectionRoutes {
       final nickname = data['nickname'] as String?;
       final rawPassword = data['raw_password'] as String;
       final encryptedPassword =
-          rawPassword != null && rawPassword.trim().isNotEmpty
+          rawPassword.trim().isNotEmpty
               ? encryption.encryptText(rawPassword)
               : null;
       final emailAddress = data['network_connection_email'] as String?;

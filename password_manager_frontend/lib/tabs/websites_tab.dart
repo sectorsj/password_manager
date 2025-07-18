@@ -7,7 +7,7 @@ import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/widgets/add_website_form_widget.dart';
 
 class WebsitesTab extends StatefulWidget {
-  const WebsitesTab({Key? key}) : super(key: key);
+  const WebsitesTab({super.key});
 
   @override
   _WebsitesTabState createState() => _WebsitesTabState();
@@ -16,8 +16,8 @@ class WebsitesTab extends StatefulWidget {
 class _WebsitesTabState extends State<WebsitesTab> {
   final WebsiteService websiteService = WebsiteService();
   List<Website> _websites = [];
-  Map<int, bool> _showPasswordMap = {};
-  Map<int, String> _decryptedPasswords = {};
+  final Map<int, bool> _showPasswordMap = {};
+  final Map<int, String> _decryptedPasswords = {};
 
   @override
   void initState() {

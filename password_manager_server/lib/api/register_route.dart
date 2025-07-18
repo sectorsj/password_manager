@@ -28,7 +28,7 @@ class RegisterRoute extends BaseRoute {
     try {
       // 1. Получаем данные от клиента
       final data = await _extractRequestData(request);
-      print('⚠️ Контроль: Получены данные для регистрации аккаунта: ${data}');
+      print('⚠️ Контроль: Получены данные для регистрации аккаунта: $data');
 
       // 2. Генерация AES ключа и шифрование пароля
       final aesKey = await _generateAesKey(data['secret_phrase']);

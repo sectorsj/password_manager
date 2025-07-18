@@ -12,7 +12,7 @@ void debugPrintData(dynamic data, String name) {
     print('Длина строки: ${data.length}');
     print('Содержимое: $data');
     print(
-        'Первые 50 символов: ${data.length > 50 ? data.substring(0, 50) + "..." : data}');
+        'Первые 50 символов: ${data.length > 50 ? "${data.substring(0, 50)}..." : data}');
   } else if (data is Uint8List) {
     print('Длина массива: ${data.length}');
     print('Первые 20 байтов: ${data.take(20).toList()}');
@@ -20,7 +20,7 @@ void debugPrintData(dynamic data, String name) {
       try {
         final asString = String.fromCharCodes(data);
         print(
-            'Как строка: ${asString.length > 100 ? asString.substring(0, 100) + "..." : asString}');
+            'Как строка: ${asString.length > 100 ? "${asString.substring(0, 100)}..." : asString}');
       } catch (e) {
         print('Не удается конвертировать в строку: $e');
       }
@@ -39,13 +39,13 @@ void testParsing() {
   print('=== ТЕСТИРОВАНИЕ ФУНКЦИЙ ПАРСИНГА ===');
 
   // Тест 1: Объектный формат
-  final test1 = '{98,102,180,137,155,245}';
+  const test1 = '{98,102,180,137,155,245}';
   print('Тест 1: Объектный формат');
   final result1 = parseObjectFormat(test1, 'test1');
   print('Результат: $result1');
 
   // Тест 2: JSON массив
-  final test2 = '[98,102,180,137,155,245]';
+  const test2 = '[98,102,180,137,155,245]';
   print('Тест 2: JSON массив');
   final result2 = parseUint8ListFromDb(test2, 'test2');
   print('Результат: $result2');

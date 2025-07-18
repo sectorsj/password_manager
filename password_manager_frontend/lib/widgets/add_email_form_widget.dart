@@ -1,6 +1,4 @@
-import 'package:common_utility_package/encryption_utility.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:password_manager_frontend/models/email.dart';
 import 'package:password_manager_frontend/services/email_service.dart';
 
@@ -10,11 +8,11 @@ class AddEmailFormWidget extends StatefulWidget {
   final int? userId;
 
   const AddEmailFormWidget({
-    Key? key,
+    super.key,
     required this.accountId,
     this.categoryId,
     this.userId,
-  }) : super(key: key);
+  });
 
   @override
   _AddEmailFormWidgetState createState() => _AddEmailFormWidgetState();
@@ -28,7 +26,7 @@ class _AddEmailFormWidgetState extends State<AddEmailFormWidget> {
 
   final EmailService _emailService = EmailService();
 
-  bool _isLoading = false;
+  final bool _isLoading = false;
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;

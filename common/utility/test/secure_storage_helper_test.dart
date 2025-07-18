@@ -19,7 +19,7 @@ void main() {
     const testKey = 'test_key';
 
     when(mockStorage.write(key: anyNamed('key'), value: anyNamed('value')))
-        .thenAnswer((_) async => null);
+        .thenAnswer((_) async {});
 
     await SecureStorageHelper.setAesKey(testKey);
 
@@ -40,7 +40,7 @@ void main() {
 
   test('deleteAesKey удаляет ключ', () async {
     when(mockStorage.delete(key: anyNamed('key')))
-        .thenAnswer((_) async => null);
+        .thenAnswer((_) async {});
 
     await SecureStorageHelper.deleteAesKey();
 

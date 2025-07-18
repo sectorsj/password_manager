@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:common_utility_package/encryption_utility.dart';
 import 'package:common_utility_package/jwt_util.dart';
 import 'package:shelf/shelf.dart';
-import 'package:shelf_router/shelf_router.dart';
 import 'package:logging/logging.dart';
 
 final _logger = Logger('BaseRoute');

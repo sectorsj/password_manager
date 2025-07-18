@@ -11,37 +11,45 @@ import 'api/user_routes.dart';
 import 'api/email_routes.dart';
 import 'api/website_routes.dart';
 import 'api/network_connection_routes.dart';
+import 'api/message_routes.dart';
 
 Handler buildHandler(Connection connection, Map<String, String> env) {
   final router = Router()
-    ..mount('/login', LoginRoute(connection).router)
-    ..mount('/register', RegisterRoute(connection).router)
-    ..mount('/accounts', AccountRoutes(connection).router)
-    ..mount('/users', UserRoutes(connection).router)
+    ..mount('/login', LoginRoute(connection).router.call)
+    ..mount('/register', RegisterRoute(connection).router.call)
+    ..mount('/accounts', AccountRoutes(connection).router.call)
+    ..mount('/users', UserRoutes(connection).router.call)
     ..mount(
       '/emails',
-      Pipeline()
+      const Pipeline()
           .addMiddleware(baseAuthMiddleware()) // 🔒
-          .addHandler(EmailRoutes(connection).router),
+          .addHandler(EmailRoutes(connection).router.call),
     )
     ..mount(
       '/websites',
-      Pipeline()
+      const Pipeline()
           .addMiddleware(baseAuthMiddleware()) // 🔒
-          .addHandler(WebsiteRoutes(connection).router),
+          .addHandler(WebsiteRoutes(connection).router.call),
     )
     ..mount(
-        '/network-connections',
-        Pipeline()
-            .addMiddleware(baseAuthMiddleware()) // 🔒
-            .addHandler(NetworkConnectionRoutes(connection).router));
+      '/network-connections',
+      const Pipeline()
+          .addMiddleware(baseAuthMiddleware()) // 🔒
+          .addHandler(NetworkConnectionRoutes(connection).router.call),
+    )
+    ..mount(
+      '/messages',
+      const Pipeline()
+          .addMiddleware(baseAuthMiddleware()) // 🔒
+          .addHandler(MessageRoutes(connection).router.call),
+    );
 
-  return Pipeline()
+  return const Pipeline()
       .addMiddleware(logRequests())
       .addMiddleware(corsHeaders(headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       }))
-      .addHandler(router);
+      .addHandler(router.call);
 }

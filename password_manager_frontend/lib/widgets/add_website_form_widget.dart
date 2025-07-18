@@ -1,7 +1,5 @@
 // dart
-import 'package:common_utility_package/encryption_utility.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:password_manager_frontend/models/website.dart';
 import 'package:password_manager_frontend/services/website_service.dart';
 
@@ -11,11 +9,11 @@ class AddWebsiteFormWidget extends StatefulWidget {
   final int? userId;
 
   const AddWebsiteFormWidget({
-    Key? key,
+    super.key,
     required this.accountId,
     this.categoryId,
     this.userId,
-  }) : super(key: key);
+  });
 
   @override
   _WebsiteFormPageState createState() => _WebsiteFormPageState();

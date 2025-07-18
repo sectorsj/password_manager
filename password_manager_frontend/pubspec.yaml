@@ -38,6 +38,11 @@ dependencies:
     path: ../common/utility
   jwt_decode: ^0.3.0  # Последняя версия на момент написания
   url_launcher: ^6.2.1
+  flutter_markdown: ^0.6.14
+  flutter_html: ^3.0.0-beta.2
+  flutter_layout_grid: ^2.0.1
+  chewie: ^1.7.0
+  flutter_math_fork: ^0.6.0
 
 dev_dependencies:
   flutter_test:

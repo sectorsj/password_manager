@@ -10,7 +10,7 @@ import 'package:logging/logging.dart';
 final _logger = Logger('RegistrationPage');
 
 class RegistrationPage extends StatefulWidget {
-  const RegistrationPage({Key? key}) : super(key: key);
+  const RegistrationPage({super.key});
 
   @override
   State<RegistrationPage> createState() => _RegistrationPageState();

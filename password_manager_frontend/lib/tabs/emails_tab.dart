@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Для копирования пароля
@@ -9,7 +8,7 @@ import 'package:password_manager_frontend/widgets/add_email_form_widget.dart';
 import 'package:provider/provider.dart';
 
 class EmailsTab extends StatefulWidget {
-  const EmailsTab({Key? key}) : super(key: key);
+  const EmailsTab({super.key});
 
   @override
   _EmailsTabState createState() => _EmailsTabState();
@@ -18,8 +17,8 @@ class EmailsTab extends StatefulWidget {
 class _EmailsTabState extends State<EmailsTab> {
   final EmailService emailService = EmailService();
   List<Email> _emails = [];
-  Map<int, bool> _showPasswordMap = {};
-  Map<int, String> _decryptedPasswords = {};
+  final Map<int, bool> _showPasswordMap = {};
+  final Map<int, String> _decryptedPasswords = {};
 
   @override
   void initState() {

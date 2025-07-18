@@ -31,7 +31,7 @@ class HashingUtility {
 
   /// Стабильная соль на основе фразы
   static Uint8List generateDeterministicSalt(String secretPhrase) {
-    final input = utf8.encode(secretPhrase + 'salt_suffix');
+    final input = utf8.encode('${secretPhrase}salt_suffix');
     final hash = SHA256Digest().process(Uint8List.fromList(input));
     return Uint8List.sublistView(hash, 0, SALT_BYTES);
   }

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:common_utility_package/jwt_util.dart';
 import 'package:shelf/shelf.dart';
 import 'package:logging/logging.dart';
-import 'jwt_util.dart';
 
 final _logger = Logger('JWTMiddleware');
 

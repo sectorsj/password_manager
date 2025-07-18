@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 
 import 'package:password_manager_frontend/models/network_connection.dart';
 import 'package:password_manager_frontend/services/base_service.dart';
