@@ -20,6 +20,7 @@ RUN dart compile exe bin/server.dart -o bin/server
 # Финальный минимальный контейнер
 FROM debian:bookworm-slim
 
+WORKDIR /app
 COPY --from=build /app/bin/server /app/server
 
 ENV PORT=8080
