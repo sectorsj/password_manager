@@ -176,7 +176,7 @@ class _WebsitesTabState extends State<WebsitesTab> {
                             ClipboardData(text: decrypted),
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Пароль скопирован')),
+                            const SnackBar(content: Text('Пароль скопирован ')),
                           );
                         }
                       },
