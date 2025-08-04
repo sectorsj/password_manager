@@ -14,7 +14,11 @@ class NetworkConnectionService extends BaseService {
 
   // ✅ Добавить сетевое подключение
   // 🔄 открытый пароль шифруется на сервере
-  Future<String> addNetworkConnection(NetworkConnection conn) async {
+  Future<String> addNetworkConnection(NetworkConnection conn, {bool useNewRoute = false}) async {
+    final endpoint = useNewRoute
+    ? '/network-connections/add2'     // Маршрут для логики с чекбоксом
+    : '/network-connections/add';     // Маршрут (старая совместимость)
+
     final jsonBody = {
       'network_connection_name': conn.networkConnectionName,
       'nickname': conn.nickname,
@@ -27,9 +31,10 @@ class NetworkConnectionService extends BaseService {
       'account_id': conn.accountId,
       'user_id': conn.userId,
       'category_id': conn.categoryId,
+      'email_description': conn.networkConnectionEmail != null ? 'Добавлено из формы подключения' : null,
     };
 
-    await post('/network-connections/add', jsonBody);
+    await post(endpoint, jsonBody);
     return 'Сетевое подключение добавлено успешно';
   }
 

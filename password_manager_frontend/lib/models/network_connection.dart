@@ -4,7 +4,7 @@ class NetworkConnection {
   final String? nickname;
   final String rawPassword;
   final String? networkConnectionEmail;
-  final String rawEmailPassword;
+  final String? rawEmailPassword;
   final String? ipv4;
   final String? ipv6;
   final String? networkConnectionDescription;
@@ -22,7 +22,7 @@ class NetworkConnection {
     this.nickname,
     required this.rawPassword,
     this.networkConnectionEmail,
-    required this.rawEmailPassword,
+    this.rawEmailPassword,
     this.ipv4,
     this.ipv6,
     this.networkConnectionDescription,
@@ -42,7 +42,7 @@ class NetworkConnection {
         nickname: json['nickname'],
         rawPassword: '',
         networkConnectionEmail: json['network_connection_email'],
-        rawEmailPassword: '',
+        rawEmailPassword: null,
         ipv4: json['ipv4'],
         ipv6: json['ipv6'],
         networkConnectionDescription: json['network_connection_description'],

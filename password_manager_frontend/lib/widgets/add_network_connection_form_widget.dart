@@ -32,6 +32,8 @@ class _AddNetworkConnectionFormWidgetState
   final _descriptionController = TextEditingController();
 
   bool _isLoading = false;
+  bool _addNewEmail = false;  // флаг состояния чекбокса
+
   final NetworkConnectionService _service = NetworkConnectionService();
 
   Future<void> _submitForm() async {
@@ -55,25 +57,29 @@ class _AddNetworkConnectionFormWidgetState
       networkConnectionName: _nameController.text,
       nickname: _userNicknameController.text,
       rawPassword: _passwordController.text,
-      networkConnectionEmail: _emailController.text.trim().isEmpty
-          ? null
-          : _emailController.text.trim(),
-      rawEmailPassword: _emailPasswordController.text,
-      ipv4: _ipv4Controller.text.isNotEmpty
-          ? _ipv4Controller.text
-          : _ipv4Controller.text.trim(),
-      ipv6: _ipv6Controller.text.isNotEmpty
-          ? _ipv6Controller.text
-          : _ipv6Controller.text.trim(),
-      networkConnectionDescription: _descriptionController.text.trim().isEmpty
-          ? null
-          : _descriptionController.text.trim(),
+      networkConnectionEmail:
+        _addNewEmail ? _emailController.text.trim() : null,
+        rawEmailPassword: _addNewEmail
+        ? _emailPasswordController.text.trim()
+        : null,       // если чекбокс выключен, пропускаем
+      ipv4: _ipv4Controller.text.trim().isEmpty
+          ? _ipv4Controller.text.trim()
+          : null,
+      ipv6: _ipv6Controller.text.trim().isNotEmpty
+          ? _ipv6Controller.text.trim()
+          : null,
+      networkConnectionDescription: _descriptionController.text.trim().isNotEmpty
+          ? _descriptionController.text.trim()
+          : null,
       accountId: widget.accountId,
       userId: widget.userId,
       categoryId: widget.categoryId ?? 3,
     );
     try {
-      final result = await _service.addNetworkConnection(connection);
+      final result = await _service.addNetworkConnection(
+        connection,
+        useNewRoute: _addNewEmail,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result)),
@@ -119,29 +125,7 @@ class _AddNetworkConnectionFormWidgetState
                             ? 'Введите никнейм'
                             : null,
                       ),
-                      TextFormField(
-                        controller: _passwordController,
-                        decoration: const InputDecoration(
-                            labelText: 'Пароль сетевого подключения'),
-                        obscureText: true,
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Введите пароль'
-                            : null,
-                      ),
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                            labelText: 'Эл. почта (необязательно)'),
-                      ),
-                      TextFormField(
-                        controller: _emailPasswordController,
-                        decoration: const InputDecoration(
-                            labelText: 'Пароль эл. почты'),
-                        obscureText: true,
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Введите пароль'
-                            : null,
-                      ),
+
                       TextFormField(
                         controller: _ipv4Controller,
                         decoration: const InputDecoration(
@@ -152,6 +136,57 @@ class _AddNetworkConnectionFormWidgetState
                         decoration: const InputDecoration(
                             labelText: 'IPv6 (необязательно)'),
                       ),
+
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: const InputDecoration(
+                            labelText: 'Пароль сетевого подключения'),
+                        obscureText: true,
+                        validator: (value) => value == null || value.isEmpty
+                            ? 'Введите пароль'
+                            : null,
+                      ),
+
+                      // Чекбокс: Добавить новую почту
+                      CheckboxListTile(
+                        title: const Text('Добавить новую почту'),
+                        value: _addNewEmail,
+                        onChanged: (value) {
+                          setState(() {
+                            _addNewEmail = value ?? false;
+                          });
+                        },
+                      ),
+
+                      // Поля почты — только если чекбокс включён
+                      if (_addNewEmail) ...[
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Эл. почта'),
+                            validator: (value) {
+                              if (_addNewEmail &&
+                                  (value == null || value.trim().isEmpty)) {
+                                return 'Введите эл. почту';
+                              }
+                            return null;
+                          },
+                       ),
+                        TextFormField(
+                          controller: _emailPasswordController,
+                          decoration: const InputDecoration(
+                            labelText: 'Пароль эл. почты'),
+                          obscureText: true,
+                          validator: (value) {
+                            if (_addNewEmail &&
+                                (value == null || value.trim().isEmpty)) {
+                              return 'Введите пароль эл. почты';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                      
                       TextFormField(
                         controller: _descriptionController,
                         decoration: const InputDecoration(
