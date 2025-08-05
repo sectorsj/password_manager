@@ -62,7 +62,7 @@ class _AddNetworkConnectionFormWidgetState
         rawEmailPassword: _addNewEmail
         ? _emailPasswordController.text.trim()
         : null,       // если чекбокс выключен, пропускаем
-      ipv4: _ipv4Controller.text.trim().isEmpty
+      ipv4: _ipv4Controller.text.trim().isNotEmpty
           ? _ipv4Controller.text.trim()
           : null,
       ipv6: _ipv6Controller.text.trim().isNotEmpty

@@ -18,7 +18,7 @@ class NetworkConnectionRoutes {
     router.get('/', _getNetworkConnectionsByUserId);
     router.get('/<id>/password', _getDecryptedPasswordById);
     router.post('/add', _addNetworkConnection);
-    router.post('/add2', _addNetworkConnectionNew);
+    router.post('/add2', _addNewNetworkConnectionWithoutCreatingANewEmail);
 
     return router;
   }
@@ -226,7 +226,7 @@ class NetworkConnectionRoutes {
 
 
 
-  Future<Response> _addNetworkConnectionNew(Request request) async {
+  Future<Response> _addNewNetworkConnectionWithoutCreatingANewEmail(Request request) async {
     try {
       final encryption = _getEncryption(request);
       final userId = _getUserId(request);
@@ -249,8 +249,9 @@ class NetworkConnectionRoutes {
       final ipv4 = data['ipv4'] as String?;
       final ipv6 = data['ipv6'] as String?;
       final description = data['network_connection_description'] as String?;
-      final emailAddress = data['network_connection_email'] as String?;
-      final emailDescription = data['email_description'] as String?;
+
+      String? emailAddress = data['network_connection_email'] as String?;
+      String? emailDescription = data['email_description'] as String?;
 
       final rawEmailPassword = data['raw_email_password'] as String?;
       final encryptedEmailPassword = (emailAddress != null &&
@@ -264,6 +265,28 @@ class NetworkConnectionRoutes {
           ? encryption.encryptText(rawPassword)
           : null;
       
+      // 🔍 Если чекбокс выключен, а email не передан — ищем email по user_id
+      if (emailAddress == null && userId != null) {
+        final emailResult = await connection.execute(Sql.named('''
+          SELECT email_address
+          FROM emails
+          WHERE user_id = @userId
+          ORDER BY created_at ASC
+          LIMIT 1
+        '''), parameters: {
+          'userId': userId,
+        });
+
+        if (emailResult.isNotEmpty) {
+          final map = emailResult.first.toColumnMap();
+          emailAddress = map['email_address'] as String?;
+          emailDescription ??= 'Привязка почты по пользователю';
+          print('📩 Автоматически выбрана почта: $emailAddress');
+        } else {
+          print('⚠️ Почта по user_id не найдена');
+        }
+      }
+
       if ([
         encryptedPassword,
         connectionName,
