@@ -78,7 +78,7 @@ class _AddNetworkConnectionFormWidgetState
     try {
       final result = await _service.addNetworkConnection(
         connection,
-        useNewRoute: _addNewEmail,
+        useNewRoute: !_addNewEmail,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
