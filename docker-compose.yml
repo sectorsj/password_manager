@@ -4,8 +4,8 @@ services:
       context: .
       dockerfile: password_manager_server/Dockerfile
     container_name: password_server
-#    ports:
-#      - "${SERVER_PORT}:8080"
+    ports:
+      - "${SERVER_PORT}:8080"
     network_mode: "host"
     environment:
       - PORT=${SERVER_PORT}
