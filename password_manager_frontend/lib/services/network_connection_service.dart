@@ -33,6 +33,8 @@ class NetworkConnectionService extends BaseService {
       'category_id': conn.categoryId,
       'email_description': conn.networkConnectionEmail != null ? 'Добавлено из формы подключения' : null,
     };
+    print('📤 JSON отправляемый на сервер: $jsonBody');
+    print('📤 эндпоинт: $endpoint');
 
     await post(endpoint, jsonBody);
     return 'Сетевое подключение добавлено успешно';
