@@ -18,6 +18,7 @@ class NetworkConnectionRoutes {
     router.get('/', _getNetworkConnectionsByUserId);
     router.get('/<id>/password', _getDecryptedPasswordById);
     router.post('/add', _addNetworkConnection);
+    router.post('/add2', _addNetworkConnectionNew);
 
     return router;
   }
@@ -218,6 +219,104 @@ class NetworkConnectionRoutes {
       return Response.internalServerError(
         body:
             jsonEncode({'error': 'Ошибка сервера при добавлении подключения'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+  }
+
+
+
+  Future<Response> _addNetworkConnectionNew(Request request) async {
+    try {
+      final encryption = _getEncryption(request);
+      final userId = _getUserId(request);
+
+      if (encryption == null || userId == null) {
+        return Response.forbidden(
+          jsonEncode({'error': 'Нет доступа: отсутствует ключ или пользователь'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      final data = jsonDecode(await request.readAsString());
+      print('📥 Получены данные: ${jsonEncode(data)}');
+
+      final connectionName = data['network_connection_name'] as String?;
+      final nickname = data['nickname'] as String?;
+      final rawPassword = data['raw_password'] as String?;
+      final accountId = data['account_id'] as int?;
+      final categoryId = data['category_id'] as int?;
+      final ipv4 = data['ipv4'] as String?;
+      final ipv6 = data['ipv6'] as String?;
+      final description = data['network_connection_description'] as String?;
+      final emailAddress = data['network_connection_email'] as String?;
+      final emailDescription = data['email_description'] as String?;
+
+      final rawEmailPassword = data['raw_email_password'] as String?;
+      final encryptedEmailPassword = (emailAddress != null &&
+              rawEmailPassword != null &&
+              rawEmailPassword.trim().isNotEmpty)
+          ? encryption.encryptText(rawEmailPassword)
+          : null;
+
+      final encryptedPassword = (rawPassword != null &&
+              rawPassword.trim().isNotEmpty)
+          ? encryption.encryptText(rawPassword)
+          : null;
+      
+      if ([
+        encryptedPassword,
+        connectionName,
+        nickname,
+        accountId,
+        categoryId,
+        userId,
+      ].any((v) => v == null || (v is String && v.trim().isEmpty))) {
+        return Response.badRequest(
+          body: jsonEncode({'error': 'Отсутствуют обязательные поля'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+      }
+
+      await connection.execute(Sql.named('''
+        SELECT create_network_connection_with_nickname_email_and_ip(
+          @accountId,
+          @userId,
+          @categoryId,
+          @nickname,
+          @encryptedPassword,
+          @connectionName,
+          @ipv4,
+          @ipv6,
+          @description,
+          @emailAddress,
+          @emailEncryptedPassword,
+          @emailDescription
+        )
+      '''), parameters: {
+        'accountId': accountId,
+        'userId': userId,
+        'categoryId': categoryId,
+        'nickname': nickname,
+        'encryptedPassword': encryptedPassword,
+        'connectionName': connectionName,
+        'ipv4': ipv4,
+        'ipv6': ipv6,
+        'description': description,
+        'emailAddress': emailAddress,
+        'emailEncryptedPassword': encryptedEmailPassword,
+        'emailDescription': emailDescription,
+      });
+
+       return Response.ok(
+        jsonEncode({'message': 'Подключение успешно добавлено'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+    } catch(e, stack) {
+      print('❌ Ошибка при добавлении подключения: $e\n$stack');
+      return Response.internalServerError(
+        body: jsonEncode({'error': 'Ошибка сервера при добавлении подключения'}),
         headers: {'Content-Type': 'application/json'},
       );
     }
