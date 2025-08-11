@@ -266,7 +266,7 @@ class NetworkConnectionRoutes {
           : null;
       
       // 🔍 Если чекбокс выключен, а email не передан — ищем email по user_id
-      if (emailAddress == null && userId != null) {
+      if (emailAddress == null) {
         final emailResult = await connection.execute(Sql.named('''
           SELECT email_address
           FROM emails
