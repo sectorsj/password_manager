@@ -10,7 +10,12 @@ class WebsiteService extends BaseService {
 
   // ✅ Добавить новый вебсайт
   // 🔄 открытый пароль шифруется на сервере
-  Future<String> addWebsite(Website website) async {
+  Future<String> addWebsite(Website website, {bool useNewRoute = false}) async {
+    final endpoint = useNewRoute
+    ? '/websites/add2'   // Маршрут для логики с чекбоксом
+    : '/websites/add';   // Маршрут (старая совместимость)
+
+
     final jsonBody = {
       'website_name': website.websiteName,
       'website_url': website.websiteUrl,
@@ -24,9 +29,15 @@ class WebsiteService extends BaseService {
       'account_id': website.accountId,
       'user_id': website.userId,
       'category_id': website.categoryId,
+      'email_description':  website.websiteEmail != null 
+        ? 'Добавлено из формы создания нового вебсайта' 
+        : null,
     };
+    
+    print('📤 JSON отправляемый на сервер: $jsonBody');
+    print('📤 эндпоинт: $endpoint');
 
-    await post('/websites/add', jsonBody);
+    await post(endpoint, jsonBody);
     return 'Вебсайт добавлен успешно';
   }
 

@@ -30,6 +30,7 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
   final _descriptionController = TextEditingController();
 
   bool _isLoading = false;
+  bool _addNewEmail = false;  // флаг для чекбокса, отвечающего за добавление новой почты
   final WebsiteService _websiteService = WebsiteService();
 
   Future<void> _submitForm() async {
@@ -53,21 +54,22 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
       websiteUrl: _urlController.text,
       nickname: _userNicknameController.text,
       rawPassword: _passwordController.text,
-      websiteEmail: _emailController.text.trim().isEmpty
-          ? null
-          : _emailController.text.trim(),
-      rawEmailPassword: _emailPasswordController.text,
+      websiteEmail: _addNewEmail ? _emailController.text.trim() : null,
+      rawEmailPassword: _addNewEmail
+          ? _emailPasswordController.text.trim()
+          : null,
       websiteDescription: _descriptionController.text,
       accountId: widget.accountId,
       userId: widget.userId,
-      categoryId: widget.categoryId ?? 3,
-      // 💡 по умолчанию — категория для сайтов
-      nicknameId: 0,
-      // временно 0, логин пойдёт как nickname
+      categoryId: widget.categoryId ?? 3, // 💡 по умолчанию "3" - категория для сайтов
+      nicknameId: 0, // временно 0, логин пойдёт как nickname
     );
 
     try {
-      final result = await _websiteService.addWebsite(website);
+      final result = await _websiteService.addWebsite(
+        website,
+        useNewRoute: !_addNewEmail,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result)),
@@ -129,20 +131,46 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
                             ? 'Введите пароль'
                             : null,
                       ),
-                      TextFormField(
-                        controller: _emailController,
-                        decoration: const InputDecoration(
-                            labelText: 'Эл. почта (необязательно)'),
+                      // Чекбокс: Добавить новую почту
+                      CheckboxListTile(
+                        title: const Text('Добавить новую почту'),
+                        value: _addNewEmail,
+                        onChanged: (value) {
+                          setState(() {
+                            _addNewEmail = value ?? false;
+                          });
+                        },
                       ),
-                      TextFormField(
-                        controller: _emailPasswordController,
-                        decoration: const InputDecoration(
+
+                      // Поля почты — только если чекбокс включён
+                      if (_addNewEmail) ...[
+                        TextFormField(
+                          controller: _emailController,
+                          decoration: const InputDecoration(
+                            labelText: 'Эл. почта'),
+                          validator: (value) {
+                            if (_addNewEmail &&
+                                (value == null || value.trim().isEmpty)) {
+                              return 'Введите эл. почту';
+                            }
+                            return null;
+                          },
+                        ),
+                        TextFormField(
+                          controller: _emailPasswordController,
+                          decoration: const InputDecoration(
                             labelText: 'Пароль эл. почты'),
-                        obscureText: true,
-                        validator: (value) => value == null || value.isEmpty
-                            ? 'Введите пароль'
-                            : null,
-                      ),
+                          obscureText: true,
+                          validator: (value) {
+                            if (_addNewEmail &&
+                                (value == null || value.trim().isEmpty)) {
+                              return 'Введите пароль эл. почты';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+
                       TextFormField(
                         controller: _descriptionController,
                         decoration: const InputDecoration(

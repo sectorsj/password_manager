@@ -16,6 +16,7 @@ class WebsiteRoutes {
     router.get('/', _getWebsiteByUserId);
     router.get('/<id>/password', _getDecryptedWebsitePasswordById);
     router.post('/add', _addWebsite);
+    router.post('/add2', _addNewWebsiteWithoutCreatingANewEmail);
 
     return router;
   }
@@ -224,4 +225,121 @@ class WebsiteRoutes {
       );
     }
   }
+
+  Future<Response> _addNewWebsiteWithoutCreatingANewEmail(Request request) async {
+  try {
+    final encryption = _getEncryption(request);
+    final userId = _getUserId(request);
+
+    if (encryption == null || userId == null) {
+      return Response.forbidden(
+        jsonEncode({'error': 'Нет доступа: отсутствует ключ или пользователь'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    final data = jsonDecode(await request.readAsString());
+    print('📥 Получены данные: ${jsonEncode(data)}');
+
+    final websiteName = data['website_name'] as String?;
+    final websiteUrl = data['website_url'] as String?;
+    final nickname = data['nickname'] as String?;
+    final rawPassword = data['raw_password'] as String?;
+    final accountId = data['account_id'] as int?;
+    final categoryId = data['category_id'] as int?;
+    final description = data['website_description'] as String?;
+
+    String? emailAddress = data['website_email'] as String?;
+    String? emailDescription = data['email_description'] as String?;
+
+    final rawEmailPassword = data['raw_email_password'] as String?;
+    final encryptedEmailPassword = (emailAddress != null &&
+            rawEmailPassword != null &&
+            rawEmailPassword.trim().isNotEmpty)
+        ? encryption.encryptText(rawEmailPassword)
+        : null;
+
+    final encryptedPassword = (rawPassword != null &&
+            rawPassword.trim().isNotEmpty)
+        ? encryption.encryptText(rawPassword)
+        : null;
+    
+    // 🔍 Если чекбокс выключен, а email не передан — ищем email по user_id
+    if (emailAddress == null) {
+      final emailResult = await connection.execute(Sql.named('''
+        SELECT email_address
+        FROM emails
+        WHERE user_id = @userId
+        ORDER BY created_at ASC
+        LIMIT 1
+      '''), parameters: {
+        'userId': userId,
+      });
+
+      if (emailResult.isNotEmpty) {
+        final map = emailResult.first.toColumnMap();
+        emailAddress = map['email_address'] as String?;
+        emailDescription ??= 'Привязка почты по пользователю';
+        print('📩 Автоматически выбрана почта: $emailAddress');
+      } else {
+        print('⚠️ Почта по user_id не найдена');
+      }
+    }
+
+    if ([
+      encryptedPassword,
+      websiteName,
+      websiteUrl,
+      nickname,
+      accountId,
+      categoryId,
+      userId,
+    ].any((v) => v == null || (v is String && v.trim().isEmpty))) {
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Отсутствуют обязательные поля'}),
+        headers: {'Content-Type': 'application/json'},
+      );
+    }
+
+    await connection.execute(Sql.named('''
+      SELECT create_website_with_nickname_email_and_url(
+        @accountId,
+        @userId,
+        @categoryId,
+        @nickname,
+        @encryptedPassword,
+        @websiteName,
+        @websiteUrl,
+        @description,
+        @emailAddress,
+        @emailEncryptedPassword,
+        @emailDescription
+      )
+    '''), parameters: {
+      'accountId': accountId,
+      'userId': userId,
+      'categoryId': categoryId,
+      'nickname': nickname,
+      'encryptedPassword': encryptedPassword,
+      'websiteName': websiteName,
+      'websiteUrl': websiteUrl,
+      'description': description,
+      'emailAddress': emailAddress,
+      'emailEncryptedPassword': encryptedEmailPassword,
+      'emailDescription': emailDescription,
+    });
+
+    return Response.ok(
+      jsonEncode({'message': 'Вебсайт успешно добавлен'}),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+  } catch (e, stack) {
+    print('❌ Ошибка при добавлении вебсайта: $e\n$stack');
+    return Response.internalServerError(
+      body: jsonEncode({'error': 'Ошибка сервера при добавлении вебсайта'}),
+      headers: {'Content-Type': 'application/json'},
+    );
+  }
+}
 }
