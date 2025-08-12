@@ -6,7 +6,7 @@ class Website {
   final String? nickname;
   final String rawPassword;
   final String? websiteEmail;
-  final String rawEmailPassword;
+  final String? rawEmailPassword;
   final String? websiteDescription;
   final int accountId;
   final int? userId;
@@ -23,7 +23,7 @@ class Website {
     this.nickname,
     required this.rawPassword,
     this.websiteEmail,
-    required this.rawEmailPassword,
+    this.rawEmailPassword,
     this.websiteDescription,
     required this.accountId,
     this.userId,
@@ -41,7 +41,7 @@ class Website {
         nickname: json['nickname'],
         rawPassword: '',
         websiteEmail: json['website_email'],
-        rawEmailPassword: '',
+        rawEmailPassword: null,
         websiteDescription: json['website_description'],
         accountId: json['account_id'],
         userId: json['user_id'],

@@ -1,15 +1,15 @@
 CREATE OR REPLACE FUNCTION public.create_website_with_nickname_and_email(
-    p_account_id BIGINT,
-    p_user_id BIGINT,
-    p_category_id BIGINT,
-    p_nickname TEXT,
-    p_encrypted_password TEXT,
-    p_website_name VARCHAR,
-    p_website_url VARCHAR,
-    p_website_description TEXT DEFAULT NULL,
-    p_email_address TEXT DEFAULT NULL,
-    p_email_password TEXT DEFAULT NULL,
-    p_email_description TEXT DEFAULT NULL
+    p_account_id               BIGINT,
+    p_user_id                  BIGINT,
+    p_category_id              BIGINT,
+    p_nickname                 TEXT,
+    p_encrypted_password       TEXT,
+    p_website_name             VARCHAR,
+    p_website_url              VARCHAR,
+    p_website_description      TEXT DEFAULT NULL,
+    p_email_address            TEXT DEFAULT NULL,
+    p_email_password           TEXT DEFAULT NULL,
+    p_email_description        TEXT DEFAULT NULL
 )
     RETURNS BIGINT
     LANGUAGE plpgsql
