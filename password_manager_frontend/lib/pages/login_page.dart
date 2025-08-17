@@ -8,6 +8,8 @@ import 'package:password_manager_frontend/utils/ui_routes.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../widgets/password_field.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -106,13 +108,14 @@ class _LoginPageState extends State<LoginPage> {
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Введите логин' : null,
               ),
-              TextFormField(
+
+              PasswordField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Пароль'),
-                obscureText: true,
+                labelText: 'Пароль',
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Введите пароль' : null,
               ),
+
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _isLoading ? null : _submitLogin,

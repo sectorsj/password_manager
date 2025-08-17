@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:password_manager_frontend/models/website.dart';
 import 'package:password_manager_frontend/services/website_service.dart';
+import 'package:password_manager_frontend/widgets/password_field.dart';
 
 class AddWebsiteFormWidget extends StatefulWidget {
   final int accountId;
@@ -122,15 +123,15 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
                             ? 'Введите никнейм'
                             : null,
                       ),
-                      TextFormField(
+
+                      PasswordField(
                         controller: _passwordController,
-                        decoration:
-                            const InputDecoration(labelText: 'Пароль вебсайта'),
-                        obscureText: true,
+                        labelText: 'Пароль вебсайта',
                         validator: (value) => value == null || value.isEmpty
                             ? 'Введите пароль'
                             : null,
                       ),
+
                       // Чекбокс: Добавить новую почту
                       CheckboxListTile(
                         title: const Text('Добавить новую почту'),
@@ -156,11 +157,10 @@ class _WebsiteFormPageState extends State<AddWebsiteFormWidget> {
                             return null;
                           },
                         ),
-                        TextFormField(
+
+                        PasswordField(
                           controller: _emailPasswordController,
-                          decoration: const InputDecoration(
-                            labelText: 'Пароль эл. почты'),
-                          obscureText: true,
+                          labelText: 'Пароль эл. почты',
                           validator: (value) {
                             if (_addNewEmail &&
                                 (value == null || value.trim().isEmpty)) {

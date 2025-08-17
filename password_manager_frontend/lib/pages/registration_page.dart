@@ -4,6 +4,7 @@ import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/services/registration_service.dart';
 import 'package:password_manager_frontend/utils/ui_routes.dart';
+import 'package:password_manager_frontend/widgets/password_field.dart';
 import 'package:provider/provider.dart';
 import 'package:logging/logging.dart';
 
@@ -149,14 +150,16 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 validator: (value) =>
                     value == null || value.isEmpty ? 'Введите email' : null,
               ),
-              TextFormField(
+
+              PasswordField(
                 controller: _emailPasswordController,
-                decoration: const InputDecoration(labelText: 'Пароль от email'),
-                obscureText: true,
+                labelText: 'Пароль от email',
                 validator: (value) => value == null || value.isEmpty
                     ? 'Введите пароль от email'
                     : null,
               ),
+
+
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(labelText: 'Телефон'),
@@ -165,14 +168,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Описание'),
               ),
-              TextFormField(
+
+
+              PasswordField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Пароль'),
-                obscureText: true,
+                labelText: 'Пароль',
                 validator: (value) => value == null || value.isEmpty
                     ? 'Введите пароль от аккаунта'
                     : null,
               ),
+
+
               TextFormField(
                 controller: _confirmPasswordController,
                 decoration: const InputDecoration(
