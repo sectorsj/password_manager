@@ -1,3 +1,5 @@
+-- PostgreSQL function to create a website with nickname, email, and URL
+-- This function checks for existing nicknames and emails, creates them if necessary,
 CREATE OR REPLACE FUNCTION public.create_website_with_nickname_email_and_url(
   p_account_id                  BIGINT,
   p_user_id                     BIGINT,
@@ -11,31 +13,31 @@ CREATE OR REPLACE FUNCTION public.create_website_with_nickname_email_and_url(
   p_email_encrypted_password    TEXT DEFAULT NULL,
   p_email_description           TEXT DEFAULT NULL
 )
-    RETURNS BIGINT
-    LANGUAGE plpgsql
+RETURNS BIGINT
+LANGUAGE plpgsql
 AS $function$
 DECLARE
-  nickname_id    BIGINT;
-  email_id       BIGINT;
-  new_website_id BIGINT;
+  v_nickname_id    BIGINT; -- Переименовано, чтобы избежать конфликта
+  v_email_id       BIGINT; -- Переименовано
+  new_website_id   BIGINT;
 BEGIN
   -- ========== 1. Никнейм ==========
   IF p_nickname IS NULL OR LENGTH(TRIM(p_nickname)) = 0 THEN
     RAISE EXCEPTION 'Никнейм не может быть пустым';
   END IF;
 
-  SELECT id INTO nickname_id
+  SELECT id INTO v_nickname_id
   FROM nicknames
   WHERE nickname = p_nickname;
 
-  IF nickname_id IS NULL THEN
+  IF v_nickname_id IS NULL THEN
     INSERT INTO nicknames (nickname, account_id, user_id)
     VALUES (p_nickname, p_account_id, p_user_id)
-    RETURNING id INTO nickname_id;
+    RETURNING id INTO v_nickname_id;
   END IF;
 
   INSERT INTO user_nicknames (user_id, nickname_id)
-  VALUES (p_user_id, nickname_id)
+  VALUES (p_user_id, v_nickname_id)
   ON CONFLICT DO NOTHING;
 
   -- ========== 2. Email ==========
@@ -48,12 +50,12 @@ BEGIN
   END IF;
 
   IF p_email_address IS NOT NULL AND LENGTH(TRIM(p_email_address)) > 0 THEN
-    SELECT id INTO email_id
+    SELECT id INTO v_email_id
     FROM emails
     WHERE email_address = p_email_address
     LIMIT 1;
 
-    IF email_id IS NULL THEN
+    IF v_email_id IS NULL THEN
       INSERT INTO emails (
         email_address,
         encrypted_password,
@@ -70,21 +72,22 @@ BEGIN
         3,
         COALESCE(p_email_description, 'Добавлено при создании вебсайта')
       )
-      RETURNING id INTO email_id;
+      RETURNING id INTO v_email_id;
     END IF;
 
     INSERT INTO user_emails (user_id, email_id)
-    VALUES (p_user_id, email_id)
+    VALUES (p_user_id, v_email_id)
     ON CONFLICT DO NOTHING;
+  ELSE
+    v_email_id := NULL;
   END IF;
 
   -- ========== 3. Проверка уникальности ==========
-  -- Никнейм + Email + URL должны быть уникальны в рамках пользователя
   IF EXISTS (
     SELECT 1 FROM websites w
     WHERE w.user_id = p_user_id
-      AND w.nickname_id = nickname_id
-      AND (w.email_id = email_id OR (w.email_id IS NULL AND email_id IS NULL))
+      AND w.nickname_id = v_nickname_id -- Используем переименованную переменную
+      AND ((w.email_id = v_email_id) OR (w.email_id IS NULL AND v_email_id IS NULL))
       AND w.website_url = p_website_url
   ) THEN
     RAISE EXCEPTION 'Такой сайт уже добавлен с этим никнеймом и почтой';
@@ -110,8 +113,8 @@ BEGIN
     p_website_url,
     p_website_description,
     p_user_id,
-    nickname_id,
-    email_id
+    v_nickname_id, -- Используем переименованную переменную
+    v_email_id -- Используем переименованную переменную
   )
   RETURNING id INTO new_website_id;
 
