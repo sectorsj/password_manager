@@ -17,7 +17,6 @@ class NetworkConnectionRoutes {
 
     router.get('/', _getNetworkConnectionsByUserId);
     router.get('/<id>/password', _getDecryptedPasswordById);
-    router.get('/email/<id>/password', _getDecryptedEmailPasswordById); // Новый маршрут
     router.post('/add', _addNetworkConnection);
     router.post('/add2', _addNewNetworkConnectionWithoutCreatingANewEmail);
 
@@ -57,7 +56,6 @@ class NetworkConnectionRoutes {
                n.nickname,
                nc.email_id,
                e.email_address AS network_connection_email,
-               e.encrypted_password AS email_encrypted_password, -- Добавлено
                nc.created_at,
                nc.updated_at
         FROM network_connections nc
@@ -134,50 +132,6 @@ class NetworkConnectionRoutes {
       );
     }
   }
-
-  Future<Response> _getDecryptedEmailPasswordById(Request request, String id) async {
-  try {
-    final emailId = int.tryParse(id);
-    final encryption = _getEncryption(request);
-
-    if (emailId == null || encryption == null) {
-      return Response.badRequest(
-        body: jsonEncode({
-          'error': 'Неверный идентификатор email или отсутствует ключ шифрования'
-        }),
-        headers: {'Content-Type': 'application/json'},
-      );
-    }
-
-    final result = await connection.execute(Sql.named('''
-            SELECT encrypted_password
-            FROM emails
-            WHERE id = @id
-      '''), parameters: {'id': emailId});
-
-    if (result.isEmpty) {
-      return Response.notFound(
-        jsonEncode({'error': 'Email не найден'}),
-        headers: {'Content-Type': 'application/json'},
-      );
-    }
-
-    final encrypted =
-        result.first.toColumnMap()['encrypted_password'] as String;
-    final decrypted = encryption.decryptText(encrypted);
-
-    return Response.ok(
-      jsonEncode({'decrypted_email_password': decrypted}),
-      headers: {'Content-Type': 'application/json'},
-    );
-  } catch (e) {
-    print('⚠️ Контроль: Ошибка при расшифровке пароля электронной почты: $e');
-    return Response.internalServerError(
-      body: jsonEncode({'error': 'Ошибка сервера'}),
-      headers: {'Content-Type': 'application/json'},
-    );
-  }
-}
 
   Future<Response> _addNetworkConnection(Request request) async {
     try {

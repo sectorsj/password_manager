@@ -50,13 +50,13 @@ class NetworkConnectionService extends BaseService {
     }
   }
 
-  // ✅ Получить расшифрованный пароль от email
-  Future<String> getDecryptedEmailPassword(int id) async {
-    final response = await get('/email/$id/password');
-    if (response is Map && response.containsKey('decrypted_email_password')) {
-      return response['decrypted_email_password'];
-    } else {
-      throw Exception('Ошибка при получении email-пароля');
-    }
-  }
+  // // ✅ Получить расшифрованный пароль от email
+  // Future<String> getDecryptedEmailPassword(int id) async {
+  //   final response = await get('/network-connections/$id/email-password');
+  //   if (response is Map && response.containsKey('decrypted_email_password')) {
+  //     return response['decrypted_email_password'];
+  //   } else {
+  //     throw Exception('Ошибка при получении email-пароля');
+  //   }
+  // }
 }
