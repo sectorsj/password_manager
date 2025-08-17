@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:password_manager_frontend/models/network_connection.dart';
 import 'package:password_manager_frontend/services/network_connection_service.dart';
+import 'package:password_manager_frontend/widgets/password_field.dart';
 
 class AddNetworkConnectionFormWidget extends StatefulWidget {
   final int accountId;
@@ -137,11 +138,9 @@ class _AddNetworkConnectionFormWidgetState
                             labelText: 'IPv6 (необязательно)'),
                       ),
 
-                      TextFormField(
+                      PasswordField(
                         controller: _passwordController,
-                        decoration: const InputDecoration(
-                            labelText: 'Пароль сетевого подключения'),
-                        obscureText: true,
+                        labelText: 'Пароль сетевого подключения',
                         validator: (value) => value == null || value.isEmpty
                             ? 'Введите пароль'
                             : null,
@@ -172,11 +171,9 @@ class _AddNetworkConnectionFormWidgetState
                             return null;
                           },
                        ),
-                        TextFormField(
+                        PasswordField(
                           controller: _emailPasswordController,
-                          decoration: const InputDecoration(
-                            labelText: 'Пароль эл. почты'),
-                          obscureText: true,
+                          labelText: 'Пароль эл. почты',
                           validator: (value) {
                             if (_addNewEmail &&
                                 (value == null || value.trim().isEmpty)) {

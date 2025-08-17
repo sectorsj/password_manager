@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:password_manager_frontend/models/email.dart';
 import 'package:password_manager_frontend/services/email_service.dart';
+import 'package:password_manager_frontend/widgets/password_field.dart';
 
 class AddEmailFormWidget extends StatefulWidget {
   final int accountId;
@@ -79,15 +80,15 @@ class _AddEmailFormWidgetState extends State<AddEmailFormWidget> {
                           ? 'Введите эл. почту'
                           : null,
                     ),
-                    TextFormField(
+
+                    PasswordField(
                       controller: _passwordController,
-                      decoration: const InputDecoration(
-                          labelText: 'Пароль электронной почты'),
-                      obscureText: true,
+                      labelText: 'Пароль электронной почты',
                       validator: (value) => value == null || value.isEmpty
                           ? 'Введите пароль'
                           : null,
                     ),
+
                     TextFormField(
                       controller: _descriptionController,
                       decoration: const InputDecoration(
