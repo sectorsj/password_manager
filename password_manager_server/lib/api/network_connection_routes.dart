@@ -46,6 +46,7 @@ class NetworkConnectionRoutes {
         SELECT nc.id,
                nc.network_connection_name,
                nc.encrypted_password,
+               nc.email_encrypted_password, -- Добавлено
                nc.network_connection_description,
                nc.ipv4,
                nc.ipv6,

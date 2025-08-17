@@ -77,7 +77,9 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
           children: [
             Text('IPv4: ${conn.ipv4 ?? '—'}'),
             Text('IPv6: ${conn.ipv6 ?? '—'}'),
+            Text('Никнейм: ${conn.nickname ?? '—'}'), // Добавлено
             Text('Эл. почта: ${conn.networkConnectionEmail ?? '—'}'),
+            Text('Пароль почты: ${conn.emailEncryptedPassword ?? '—'}'), // Добавлено
             Text('Описание: ${conn.networkConnectionDescription ?? '—'}'),
             Text('Категория: ${conn.categoryId}'),
           ],
@@ -126,8 +128,10 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
             DataColumn(label: Text('Название')),
             DataColumn(label: Text('IPv4')),
             DataColumn(label: Text('IPv6')),
-            DataColumn(label: Text('Эл. почта')),
+            DataColumn(label: Text('Никнейм')),
             DataColumn(label: Text('Пароль')),
+            DataColumn(label: Text('Эл. почта')),
+            DataColumn(label: Text('Пароль эл. почты')),
             DataColumn(label: Text('Подробнее')),
           ],
           rows: _connections.asMap().entries.map((entry) {
@@ -142,7 +146,7 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
                 DataCell(Text(conn.networkConnectionName)),
                 DataCell(Text(conn.ipv4 ?? '—')),
                 DataCell(Text(conn.ipv6 ?? '—')),
-                DataCell(Text(conn.networkConnectionEmail ?? '—')),
+                DataCell(Text(conn.nickname ?? '—')),   // Добавлено
                 DataCell(Row(
                   children: [
                     Text(isShown
@@ -166,6 +170,8 @@ class _NetworkConnectionsTabState extends State<NetworkConnectionsTab> {
                     ),
                   ],
                 )),
+                DataCell(Text(conn.networkConnectionEmail ?? '—')),
+                DataCell(Text(conn.emailEncryptedPassword ?? '—')), // Добавлено
                 DataCell(
                   IconButton(
                     icon: const Icon(Icons.info_outline),

@@ -2,11 +2,12 @@ class NetworkConnection {
   final int id;
   final String networkConnectionName;
   final String? nickname;
+  final String? ipv4;
+  final String? ipv6;
   final String rawPassword;
   final String? networkConnectionEmail;
   final String? rawEmailPassword;
-  final String? ipv4;
-  final String? ipv6;
+  final String? emailEncryptedPassword; // Добавлено для совместимости
   final String? networkConnectionDescription;
   final int accountId;
   final int? userId;
@@ -20,11 +21,12 @@ class NetworkConnection {
     required this.id,
     required this.networkConnectionName,
     this.nickname,
+    this.ipv4,
+    this.ipv6,
     required this.rawPassword,
     this.networkConnectionEmail,
     this.rawEmailPassword,
-    this.ipv4,
-    this.ipv6,
+    this.emailEncryptedPassword, // Добавлено для совместимости
     this.networkConnectionDescription,
     required this.accountId,
     this.userId,
@@ -40,11 +42,12 @@ class NetworkConnection {
         id: json['id'],
         networkConnectionName: json['network_connection_name'],
         nickname: json['nickname'],
+        ipv4: json['ipv4'],
+        ipv6: json['ipv6'],
         rawPassword: '',
         networkConnectionEmail: json['network_connection_email'],
         rawEmailPassword: null,
-        ipv4: json['ipv4'],
-        ipv6: json['ipv6'],
+        emailEncryptedPassword: json['email_encrypted_password'], // Добавлено для совместимости
         networkConnectionDescription: json['network_connection_description'],
         accountId: json['account_id'],
         userId: json['user_id'],
@@ -63,11 +66,12 @@ class NetworkConnection {
         'id': id,
         'network_connection_name': networkConnectionName,
         'nickname': nickname,
+        'ipv4': ipv4,
+        'ipv6': ipv6,
         'raw_password': rawPassword,
         'network_connection_email': networkConnectionEmail,
         'raw_email_password': rawEmailPassword,
-        'ipv4': ipv4,
-        'ipv6': ipv6,
+        'email_encrypted_password': emailEncryptedPassword, // Добавлено для совместимости
         'network_connection_description': networkConnectionDescription,
         'account_id': accountId,
         'user_id': userId,
