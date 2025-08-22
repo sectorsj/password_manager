@@ -81,7 +81,7 @@ class _WebsitesTabState extends State<WebsitesTab> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('URL: ${website.websiteUrl}'),
-              Text('Логин: ${website.nickname ?? '—'}'),
+              Text('Никнейм: ${website.nickname ?? '—'}'),
               Text('Email: ${website.websiteEmail ?? '—'}'),
               Text('Описание: ${website.websiteDescription ?? '—'}'),
               Text('Категория: ${website.categoryId}'),
@@ -137,9 +137,9 @@ class _WebsitesTabState extends State<WebsitesTab> {
             DataColumn(label: Text('№')),
             DataColumn(label: Text('Название')),
             DataColumn(label: Text('URL')),
-            DataColumn(label: Text('Логин')),
-            DataColumn(label: Text('Email')),
+            DataColumn(label: Text('Никнейм')),
             DataColumn(label: Text('Пароль')),
+            DataColumn(label: Text('Email')),
             DataColumn(label: Text('Подробнее')),
           ],
           rows: _websites.asMap().entries.map((entry) {
@@ -154,7 +154,6 @@ class _WebsitesTabState extends State<WebsitesTab> {
                 DataCell(Text(website.websiteName)),
                 DataCell(Text(website.websiteUrl)),
                 DataCell(Text(website.nickname ?? '—')),
-                DataCell(Text(website.websiteEmail ?? '—')),
                 DataCell(Row(
                   children: [
                     Text(
@@ -183,6 +182,7 @@ class _WebsitesTabState extends State<WebsitesTab> {
                     ),
                   ],
                 )),
+                DataCell(Text(website.websiteEmail ?? '—')),
                 DataCell(
                   IconButton(
                     icon: const Icon(Icons.info_outline),
