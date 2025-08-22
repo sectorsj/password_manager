@@ -5,6 +5,7 @@ import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/services/registration_service.dart';
 import 'package:password_manager_frontend/utils/ui_routes.dart';
 import 'package:password_manager_frontend/widgets/password_field.dart';
+import 'package:password_manager_frontend/widgets/secret_phrase_field.dart';
 import 'package:provider/provider.dart';
 import 'package:logging/logging.dart';
 
@@ -188,14 +189,17 @@ class _RegistrationPageState extends State<RegistrationPage> {
                     ? 'Пароли не совпадают'
                     : null,
               ),
-              TextFormField(
+
+
+              SecretPhraseField(
                 controller: _secretPhraseController,
-                decoration: const InputDecoration(labelText: 'Секретная фраза'),
-                obscureText: true,
+                labelText: 'Секретная Фраза',
                 validator: (value) => value == null || value.isEmpty
-                    ? 'Введите секретную фразу'
-                    : null,
+                ? 'Введите секретную фразу'
+                : null,
               ),
+
+
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _isLoading ? null : _submitRegistration,

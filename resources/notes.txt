@@ -654,3 +654,8 @@ class _EmailsTabState extends State<EmailsTab> {
 
 при регистрации в бд не создались новые записи в таблицах users, emails
 а также не выполняется вход в аккаунт
+
+
+docker compose down --volumes
+docker compose build
+docker compose up -d
