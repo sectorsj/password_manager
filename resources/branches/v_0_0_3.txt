@@ -1,0 +1,119 @@
+v_0_0_3.txt
+
+Для исправления бага BUGS: 24.07.2025.002.4,
+чтобы секретная фраза отображалась в текстовом виде (а не звездочками),
+можно использовать подход, аналогичный реализации иконки "глазика"
+для отображения/скрытия пароля из BUGS: 24.07.2025.002.2.
+
+Шаги для исправления:
+1. Обновить виджет ввода секретной фразы:
+    - Добавить возможность переключения между скрытым
+      и открытым отображением текста.
+    - Использовать иконку "глазика"
+      для управления видимостью.
+2. Обновить форму регистрации:
+    - Найти место, где используется поле для ввода секретной фразы,
+      и заменить его на обновленный виджет.
+
+Пример реализации виджета для секретной фразы
+Создадим виджет SecretPhraseField, который будет использоваться
+для ввода секретной фразы.
+
+import 'package:flutter/material.dart';
+
+/// Виджет ПоляВводаСекретнойФразы
+class SecretPhraseField extends StatefulWidget {
+  final TextEditingController controller;
+  final String labelText;
+  final String? Function(String?)? validator;
+
+  const SecretPhraseField({
+    super.key,
+    required this.controller,
+    required this.labelText,
+    this.validator,
+  });
+
+  @override
+  _SecretPhraseFieldState createState() => _SecretPhraseFieldState();
+}
+
+class _SecretPhraseFieldState extends State<SecretPhraseField> {
+  bool _isObscured = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: widget.controller,
+      obscureText: _isObscured,
+      decoration: InputDecoration(
+        labelText: widget.labelText,
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isObscured ? Icons.visibility: Icons.visibility_off
+            ),
+          onPressed: () {
+            setState(() {
+              _isObscured = !_isObscured;
+            });
+          },
+        ),
+      ),
+      validator: widget.validator,
+    );
+  }
+}
+
+Обновление формы регистрации
+В файле, где находится форма регистрации (например, registration_page.dart),
+замените поле ввода секретной фразы на новый виджет SecretPhraseField.
+
+
+
+import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/widgets/secret_phrase_field.dart';
+
+class RegistrationPage extends StatelessWidget {
+  final TextEditingController _secretPhraseController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Регистрация'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+
+            // Другие поля формы...
+
+            SecretPhraseField(
+                controller: _secretPhraseController,
+                labelText: 'Секретная Фраза',
+                validator: (value) => value == null || value.isEmpty
+                ? 'Введите секретную фразу'
+                : null,
+            ),
+
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                // Логика регистрации
+                print('Секретная фраза: ${_secretPhraseController.text}');
+              },
+              child: const Text('Зарегистрироваться'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+Итог
+Теперь секретная фраза будет отображаться в текстовом виде по умолчанию,
+но пользователь сможет скрыть её, нажав на иконку "глазика".
+
+Это решение соответствует требованиям из BUGS: 24.07.2025.002.4.
