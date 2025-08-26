@@ -1,0 +1,39 @@
+================Аккаунты:
+№ | логин аккаунта  | Имя пользователя | эл. почта            | пароль эл. почты   | телефон          | описание                       | пароль   | подтверждение | секреная фраза                |
+--|-----------------|------------------|----------------------|--------------------|------------------|--------------------------------|----------|---------------|-------------------------------|
+1 | Alice100        | Alice Thinking   | alice100@mail.ru     | accountEmailPass   | 8(123)-456-78-90 | Аккаунт Алисы                  | 100      | 100           | Алиса знает что делать        |
+2 | NeoTechX123     | Ivan Petrov      | neoivan@mail.ru      | neoSecurePass2025  | 8(911)-123-45-67 | Тестовый аккаунт Ивана Петрова | 123      | 123           | Новый день — новая идея       |
+3 | CyberMoon       | Elena Volkova    | moon.elena@mail.ru   | Elena$Moon_2025    | 8(495)-876-54-32 | Аккаунт для работы с проектом  | elenaV1  | elenaV1       | Работаем над светлым будущим  |
+4 | SafeDataX       | Dmitry Kozlov    | d.kozlov@mail.ru     | Dat@Kzlv!2025      | 8(999)-222-33-44 | Вторичный аккаунт Дмитрия      | dko_pass | dko_pass      | Больше данных — больше силы   |
+5 | InIT_Tester01   | Nina Romanova    | nina_test@mail.ru    | RomaTest_2025_xx   | 8(926)-111-88-99 | Альфа-тест от Нины             | testerN  | testerN       | Проверяю — значит живу        |
+6 | XCoreAccess     | Oleg Smirnov     | oleg.smirnov@mail.ru | SmirnovX2025$!     | 8(812)-456-12-34 | Личный аккаунт Олега           | osmir    | osmir         | Безопасность — мой приоритет  |
+
+================Эл.почта:
+№ |  эл. почта                 | пароль           | описание                          |
+--|----------------------------|------------------|-----------------------------------|
+1 | alice-email@mail.ru        | emailPass        | Электронная почта Алисы           |
+2 | neo.indox@mail.ru          | NeoMailPass%2025 | Вспомогательный email             |
+3 | lena.work2025@yandex.ru    | ElenaY@Secure!   | Рабочая почта Елены               |
+4 | safe.access91@gmail.com    | Access_91!Mail   | Резервный email для входа         |
+5 | tech.update@protonmail.com | Upd*Mail2025X    | Техническая почта для обновлений  |
+6 | nightowl.private@mail.ru   | N1ght0wl2025*    | Личная почта для приватных данных |
+
+================Сетевые подключения:
+№ | название          | ipv4          | ipv6                                    | никнейм     | пароль              | эл. почта         | описание                        |
+--|-------------------|---------------|-----------------------------------------|-------------|---------------------|-------------------|---------------------------------|
+1 | Домашний интернет | 192.168.23.23 | f2c6:e19b:0:0:0:62fe:0279:af3f          | AliceHome   | networkConnNickPass | alicehome@mail.ru | Подключение домашнего интернета |
+2 | Домашний интернет | 192.168.0.101 | f2c6:e19b::62fe:0279:af3f               | IvanHome    | NetPass2025$Secure  | ivanhome@mail.ru  | Основное подключение в квартире |
+3 | Офис Wi-Fi        | 10.0.0.50     | f2c6:0:0:52ad:192:168:3:1               | WorkNet01   | W1Fi-Work_8823      | worknet@mail.ru   | Подключение в офисе             |
+4 | Роутер на даче    | 192.168.10.1  | 3FFE:FFFF:7654:FEDA:1245:BA98:3210:4562 | DachaRouter | RouterPass_32$      | dacha.net@mail.ru | Дачное подключение через LTE    |
+5 | Общий доступ      | 192.168.1.99  | faed:0000:0000:0000:0000:bac8:3a10:4462 | GuestZone   | Guest123$Access     | guestnet@mail.ru  | Гостевое Wi-Fi-подключение      |
+6 | VPN WorkTunnel    | 172.16.0.5    | 3FFE:FFFF:0:CD30:0:0:0:0/64             | SecureVPN   | VPNpass2025!        | vpnaccess@mail.ru | Подключение к рабочему VPN      |
+
+================Сайты:
+№ | название    | URL                              | никнейм      | пароль           | эл. почта               | описание                        |
+--|-------------|----------------------------------|--------------|------------------|-------------------------|---------------------------------|
+1 | SC2         | https://starcraft2.blizzard.com/ | alicezerg    | websiteNickPass  | alice-sc2@mail.ru       | Сайт игры в старкрафт2          |
+2 | GitHub      | https://github.com               | neoCoder2025 | GhNeo$Dev@       | neo.dev@mail.ru         | Профиль разработчика на GitHub  |
+3 | YouTube     | https://youtube.com              | mediaFan     | YT_Fan2025$      | video.mailbox@gmail.com | Учетка для медиа                |
+4 | Habrahabr   | https://habr.com/ru/             | techWriter   | HabraPassX!      | habr.writer@mail.ru     | Аккаунт для публикаций на Хабре |
+5 | Steam       | https://store.steampowered.com   | gamerZone    | SteamGame_2025   | gamer.mail@gmail.com    | Аккаунт в Steam                 |
+6 | VK          | https://vk.com                   | vuser2025    | VkAccess_321!    | vk.mail2025@mail.ru     | Личный аккаунт в VK             |
