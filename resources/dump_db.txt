@@ -1,0 +1,595 @@
+passkeeper=> -- запрос для бд
+passkeeper=> -- =====================================================
+passkeeper=> -- ПОЛНЫЙ АНАЛИЗ БАЗЫ ДАННЫХ
+passkeeper=> -- =====================================================
+passkeeper=>
+passkeeper=> -- 1. ВСЕ ТАБЛИЦЫ СПИСКОМ
+passkeeper=> -- =====================================================
+passkeeper=> SELECT
+passkeeper->     'СПИСОК ВСЕХ ТАБЛИЦ' as info_type,
+passkeeper->     '' as details,
+passkeeper->     '' as extra_info
+passkeeper-> UNION ALL
+passkeeper-> SELECT
+passkeeper->     '────────────────────────────────────────' as info_type,
+passkeeper->     '' as details,
+passkeeper->     '' as extra_info
+passkeeper-> UNION ALL
+passkeeper-> SELECT
+passkeeper->     schemaname as info_type,
+passkeeper->     tablename as details,
+passkeeper->     tableowner as extra_info
+passkeeper-> FROM pg_tables
+passkeeper-> WHERE schemaname = 'public'
+passkeeper-> ORDER BY info_type, details;
+                info_type                 |        details        | extra_info
+------------------------------------------+-----------------------+------------
+ ---------------------------------------- |                       |
+ public                                   | accounts              | sectorsj
+ public                                   | categories            | sectorsj
+ public                                   | emails                | sectorsj
+ public                                   | event_publication     | sectorsj
+ public                                   | flyway_schema_history | sectorsj
+ public                                   | messages              | sectorsj
+ public                                   | network_connections   | sectorsj
+ public                                   | nicknames             | sectorsj
+ public                                   | user_emails           | sectorsj
+ public                                   | user_nicknames        | sectorsj
+ public                                   | users                 | sectorsj
+ public                                   | websites              | sectorsj
+ СПИСОК ВСЕХ ТАБЛИЦ                       |                       |
+(14 строк)
+
+
+passkeeper=>
+passkeeper=> -- 2. СТРУКТУРА КАЖДОЙ ТАБЛИЦЫ
+passkeeper=> -- =====================================================
+passkeeper=> DO $$
+passkeeper$> DECLARE
+passkeeper$>     table_rec RECORD;
+passkeeper$>     col_rec RECORD;
+passkeeper$> BEGIN
+passkeeper$>     -- Заголовок секции
+passkeeper$>     RAISE NOTICE '';
+passkeeper$>     RAISE NOTICE 'СТРУКТУРА ТАБЛИЦ';
+passkeeper$>     RAISE NOTICE '=====================================================';
+passkeeper$>
+passkeeper$>     FOR table_rec IN
+passkeeper$>         SELECT tablename
+passkeeper$>         FROM pg_tables
+passkeeper$>         WHERE schemaname = 'public'
+passkeeper$>         ORDER BY tablename
+passkeeper$>     LOOP
+passkeeper$>         RAISE NOTICE '';
+passkeeper$>         RAISE NOTICE 'ТАБЛИЦА: %', table_rec.tablename;
+passkeeper$>         RAISE NOTICE '────────────────────────────────────────';
+passkeeper$>
+passkeeper$>         -- Выводим структуру таблицы
+passkeeper$>         FOR col_rec IN
+passkeeper$>             SELECT
+passkeeper$>                 column_name,
+passkeeper$>                 data_type,
+passkeeper$>                 is_nullable,
+passkeeper$>                 column_default,
+passkeeper$>                 character_maximum_length
+passkeeper$>             FROM information_schema.columns
+passkeeper$>             WHERE table_name = table_rec.tablename
+passkeeper$>             AND table_schema = 'public'
+passkeeper$>             ORDER BY ordinal_position
+passkeeper$>         LOOP
+passkeeper$>             RAISE NOTICE '  % | % | % | Default: % | Max Length: %',
+passkeeper$>                 col_rec.column_name,
+passkeeper$>                 col_rec.data_type,
+passkeeper$>                 CASE WHEN col_rec.is_nullable = 'YES' THEN 'NULL' ELSE 'NOT NULL' END,
+passkeeper$>                 COALESCE(col_rec.column_default, 'нет'),
+passkeeper$>                 COALESCE(col_rec.character_maximum_length::text, 'нет');
+passkeeper$>         END LOOP;
+passkeeper$>     END LOOP;
+passkeeper$> END $$;
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  СТРУКТУРА ТАБЛИЦ
+ЗАМЕЧАНИЕ:  =====================================================
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: accounts
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    id | bigint | NOT NULL | Default: nextval('accounts_id_seq'::regclass) | Max Length: нет
+ЗАМЕЧАНИЕ:    account_login | character varying | NOT NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    encrypted_password | text | NOT NULL | Default: ''::text | Max Length: нет
+ЗАМЕЧАНИЕ:    aes_key | text | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    email_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: categories
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    id | bigint | NOT NULL | Default: nextval('categories_id_seq1'::regclass) | Max Length: нет
+ЗАМЕЧАНИЕ:    category_name | character varying | NOT NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    category_description | character varying | NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: emails
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    id | bigint | NOT NULL | Default: nextval('emails_id_seq1'::regclass) | Max Length: нет
+ЗАМЕЧАНИЕ:    email_address | character varying | NOT NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    email_description | text | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    account_id | bigint | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    category_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    user_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    created_at | timestamp without time zone | NULL | Default: CURRENT_TIMESTAMP | Max Length: нет
+ЗАМЕЧАНИЕ:    updated_at | timestamp without time zone | NULL | Default: CURRENT_TIMESTAMP | Max Length: нет
+ЗАМЕЧАНИЕ:    encrypted_password | text | NOT NULL | Default: ''::text | Max Length: нет
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: event_publication
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    id | uuid | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    completion_date | timestamp with time zone | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    event_type | character varying | NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    listener_id | character varying | NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    publication_date | timestamp with time zone | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    serialized_event | character varying | NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: flyway_schema_history
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    installed_rank | integer | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    version | character varying | NULL | Default: нет | Max Length: 50
+ЗАМЕЧАНИЕ:    description | character varying | NOT NULL | Default: нет | Max Length: 200
+ЗАМЕЧАНИЕ:    type | character varying | NOT NULL | Default: нет | Max Length: 20
+ЗАМЕЧАНИЕ:    script | character varying | NOT NULL | Default: нет | Max Length: 1000
+ЗАМЕЧАНИЕ:    checksum | integer | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    installed_by | character varying | NOT NULL | Default: нет | Max Length: 100
+ЗАМЕЧАНИЕ:    installed_on | timestamp without time zone | NOT NULL | Default: now() | Max Length: нет
+ЗАМЕЧАНИЕ:    execution_time | integer | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    success | boolean | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: messages
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    id | integer | NOT NULL | Default: nextval('messages_id_seq1'::regclass) | Max Length: нет
+ЗАМЕЧАНИЕ:    message_type | text | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    title | text | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    content | text | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    format | text | NOT NULL | Default: 'html'::text | Max Length: нет
+ЗАМЕЧАНИЕ:    is_active | boolean | NULL | Default: true | Max Length: нет
+ЗАМЕЧАНИЕ:    created_at | timestamp without time zone | NULL | Default: now() | Max Length: нет
+ЗАМЕЧАНИЕ:    updated_at | timestamp without time zone | NULL | Default: now() | Max Length: нет
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: network_connections
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    id | bigint | NOT NULL | Default: nextval('network_connections_id_seq1'::regclass) | Max Length: нет
+ЗАМЕЧАНИЕ:    network_connection_name | character varying | NOT NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    ipv4 | character varying | NULL | Default: нет | Max Length: 15
+ЗАМЕЧАНИЕ:    ipv6 | character varying | NULL | Default: нет | Max Length: 39
+ЗАМЕЧАНИЕ:    account_id | bigint | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    category_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    network_connection_description | text | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    created_at | timestamp without time zone | NULL | Default: CURRENT_TIMESTAMP | Max Length: нет
+ЗАМЕЧАНИЕ:    updated_at | timestamp without time zone | NULL | Default: CURRENT_TIMESTAMP | Max Length: нет
+ЗАМЕЧАНИЕ:    encrypted_password | text | NOT NULL | Default: ''::text | Max Length: нет
+ЗАМЕЧАНИЕ:    user_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    nickname_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    email_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: nicknames
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    id | bigint | NOT NULL | Default: nextval('nicknames_id_seq1'::regclass) | Max Length: нет
+ЗАМЕЧАНИЕ:    nickname | character varying | NOT NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    account_id | bigint | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    user_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    category_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    created_at | timestamp without time zone | NULL | Default: CURRENT_TIMESTAMP | Max Length: нет
+ЗАМЕЧАНИЕ:    updated_at | timestamp without time zone | NULL | Default: CURRENT_TIMESTAMP | Max Length: нет
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: user_emails
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    user_id | bigint | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    email_id | bigint | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: user_nicknames
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    user_id | bigint | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    nickname_id | bigint | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: users
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    id | bigint | NOT NULL | Default: nextval('users_id_seq1'::regclass) | Max Length: нет
+ЗАМЕЧАНИЕ:    user_phone | character varying | NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    user_description | character varying | NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    user_name | character varying | NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    account_id | bigint | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    created_at | timestamp without time zone | NULL | Default: CURRENT_TIMESTAMP | Max Length: нет
+ЗАМЕЧАНИЕ:    updated_at | timestamp without time zone | NULL | Default: CURRENT_TIMESTAMP | Max Length: нет
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  ТАБЛИЦА: websites
+ЗАМЕЧАНИЕ:  ----------------------------------------
+ЗАМЕЧАНИЕ:    id | bigint | NOT NULL | Default: nextval('websites_id_seq1'::regclass) | Max Length: нет
+ЗАМЕЧАНИЕ:    website_description | text | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    website_name | character varying | NOT NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    account_id | bigint | NOT NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    category_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    website_url | character varying | NOT NULL | Default: нет | Max Length: 255
+ЗАМЕЧАНИЕ:    created_at | timestamp without time zone | NULL | Default: CURRENT_TIMESTAMP | Max Length: нет
+ЗАМЕЧАНИЕ:    updated_at | timestamp without time zone | NULL | Default: CURRENT_TIMESTAMP | Max Length: нет
+ЗАМЕЧАНИЕ:    encrypted_password | text | NOT NULL | Default: ''::text | Max Length: нет
+ЗАМЕЧАНИЕ:    user_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    nickname_id | bigint | NULL | Default: нет | Max Length: нет
+ЗАМЕЧАНИЕ:    email_id | bigint | NULL | Default: нет | Max Length: нет
+DO
+passkeeper=>
+passkeeper=> -- 3. ДАННЫЕ ИЗ КАЖДОЙ ТАБЛИЦЫ (первые 5 записей для безопасности)
+passkeeper=> -- =====================================================
+passkeeper=>
+passkeeper=> -- accounts
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: accounts' as table_info;
+        table_info
+--------------------------
+ ДАННЫЕ ТАБЛИЦЫ: accounts
+(1 строка)
+
+
+passkeeper=> SELECT * FROM accounts LIMIT 5;
+ id | account_login |            encrypted_password            |                   aes_key                    | email_id
+----+---------------+------------------------------------------+----------------------------------------------+----------
+ 22 | Alice100      | S7L03+cSDuW5T+3LlqGWp4kIXCyPzHxj/xEfNQ== | OOvu7YB/IJmn11eDhbVF9TLOqvNA+IfZPn93Xhuc9F0= |       23 24 | NeoTechX123   | vYQ2+z4hV+r9gsH5RgwYpCuWoGzPBgrXVWTxpg== | 1ElmqtpRboMBbZZqq8e4KTendO5Ze8V6fWrLDoq7hj4= |       34(2 строки)
+
+
+passkeeper=>
+passkeeper=> -- categories
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: categories' as table_info;
+         table_info
+----------------------------
+ ДАННЫЕ ТАБЛИЦЫ: categories
+(1 строка)
+
+
+passkeeper=> SELECT * FROM categories LIMIT 5;
+ id |    category_name    | category_description
+----+---------------------+----------------------
+  1 | веб-сайты           |
+  2 | почты               |
+  3 | сетевые подключения |
+(3 строки)
+
+
+passkeeper=>
+passkeeper=> -- emails
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: emails' as table_info;
+       table_info
+------------------------
+ ДАННЫЕ ТАБЛИЦЫ: emails
+(1 строка)
+
+
+passkeeper=> SELECT * FROM emails LIMIT 5;
+ id |   email_address   |            email_description             | account_id | category_id | user_id |         created_at         |         updated_at         |                      encrypted_password
+----+-------------------+------------------------------------------+------------+-------------+---------+----------------------------+----------------------------+--------------------------------------------------------------
+ 23 | alice100@mail.ru  | Почта созданная при регистрации аккаунта |         22 |           2 |      22 | 2025-07-22 18:38:38.662431 | 2025-07-22 18:38:38.662431 | KKzSUeCl5XERfAAkCbPu5SxVfF2atXVlnGsLpg==
+ 34 | neoivan@mail.ru   | Почта созданная при регистрации аккаунта |         24 |           2 |      24 | 2025-08-24 10:41:01.287193 | 2025-08-24 10:41:01.287193 | zjeRZVqWiYlHKR3crckKdDtCwqRIt6DJ8w/vysnXDI/9UKmalJukTUJgS3I=
+ 35 | neo.indox@mail.ru | Вспомогательный email                    |         24 |           2 |      24 | 2025-08-24 10:43:43.63606  | 2025-08-24 10:43:43.63606  | Cf3otwSy9JEU6jSaTzGaJVtGhOGmj/rPPYzbgINbg7GA9UuCBaY7B2aSpSU=
+(3 строки)
+
+
+passkeeper=>
+passkeeper=> -- event_publication
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: event_publication' as table_info;
+            table_info
+-----------------------------------
+ ДАННЫЕ ТАБЛИЦЫ: event_publication
+(1 строка)
+
+
+passkeeper=> SELECT * FROM event_publication LIMIT 5;
+ id | completion_date | event_type | listener_id | publication_date | serialized_event
+----+-----------------+------------+-------------+------------------+------------------
+(0 строк)
+
+
+passkeeper=>
+passkeeper=> -- flyway_schema_history
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: flyway_schema_history' as table_info;
+              table_info
+---------------------------------------
+ ДАННЫЕ ТАБЛИЦЫ: flyway_schema_history
+(1 строка)
+
+
+passkeeper=> SELECT * FROM flyway_schema_history LIMIT 5;
+ installed_rank | version | description | type | script | checksum | installed_by | installed_on | execution_time | success
+----------------+---------+-------------+------+--------+----------+--------------+--------------+----------------+---------
+(0 строк)
+
+
+passkeeper=>
+passkeeper=> -- network_connections
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: network_connections' as table_info;
+             table_info
+-------------------------------------
+ ДАННЫЕ ТАБЛИЦЫ: network_connections
+(1 строка)
+
+
+passkeeper=> SELECT * FROM network_connections LIMIT 5;
+ id | network_connection_name |     ipv4      |              ipv6              | account_id | category_id | network_connection_description  |         created_at         |         updated_at         |                      encrypted_password                      | user_id | nickname_id | email_id
+----+-------------------------+---------------+--------------------------------+------------+-------------+---------------------------------+----------------------------+----------------------------+--------------------------------------------------------------+---------+-------------+----------
+ 15 | Домашний интернет       | 192.168.1.101 | f2c6:e19b:0:0:0:62fe:0279:af3f |         24 |           3 | Основное подключение в квартире | 2025-08-24 10:55:17.295841 | 2025-08-24 10:55:17.295841 | dHfMrM64bbz3E7RPPKpL3Dg/qUR6PAssKnRqkAxkj+NEgU89EI/Usm1+k2s= |      24 |          50 |       34
+(1 строка)
+
+
+passkeeper=>
+passkeeper=> -- nicknames
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: nicknames' as table_info;
+        table_info
+---------------------------
+ ДАННЫЕ ТАБЛИЦЫ: nicknames
+(1 строка)
+
+
+passkeeper=> SELECT * FROM nicknames LIMIT 5;
+ id |    nickname    | account_id | user_id | category_id |         created_at         |         updated_at
+----+----------------+------------+---------+-------------+----------------------------+----------------------------
+ 22 | Alice Thinking |         22 |      22 |             | 2025-07-22 18:38:38.662431 | 2025-07-22 18:38:38.662431
+ 49 | Ivan Petrov    |         24 |      24 |             | 2025-08-24 10:41:01.287193 | 2025-08-24 10:41:01.287193
+ 50 | NeoTechX123    |         24 |      24 |             | 2025-08-24 10:55:17.295841 | 2025-08-24 10:55:17.295841
+(3 строки)
+
+
+passkeeper=>
+passkeeper=> -- user_emails
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: user_emails' as table_info;
+         table_info
+-----------------------------
+ ДАННЫЕ ТАБЛИЦЫ: user_emails
+(1 строка)
+
+
+passkeeper=> SELECT * FROM user_emails LIMIT 5;
+ user_id | email_id
+---------+----------
+      22 |       23
+      24 |       34
+      24 |       35
+(3 строки)
+
+
+passkeeper=>
+passkeeper=> -- user_nicknames
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: user_nicknames' as table_info;
+           table_info
+--------------------------------
+ ДАННЫЕ ТАБЛИЦЫ: user_nicknames
+(1 строка)
+
+
+passkeeper=> SELECT * FROM user_nicknames LIMIT 5;
+ user_id | nickname_id
+---------+-------------
+      22 |          22
+      24 |          49
+      24 |          50
+(3 строки)
+
+
+passkeeper=>
+passkeeper=> -- users
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: users' as table_info;
+      table_info
+-----------------------
+ ДАННЫЕ ТАБЛИЦЫ: users
+(1 строка)
+
+
+passkeeper=> SELECT * FROM users LIMIT 5;
+ id |    user_phone    |        user_description        |   user_name    | account_id |         created_at         |         updated_at
+----+------------------+--------------------------------+----------------+------------+----------------------------+----------------------------
+ 22 | 123-456-789      | Аккаунт Алисы                  | Alice Thinking |         22 | 2025-07-22 18:38:38.662431 | 2025-07-22 18:38:38.662431
+ 24 | 8(911)-123-45-67 | Тестовый аккаунт Ивана Петрова | Ivan Petrov    |         24 | 2025-08-24 10:41:01.287193 | 2025-08-24 10:41:01.287193
+(2 строки)
+
+
+passkeeper=>
+passkeeper=> -- websites
+passkeeper=> SELECT 'ДАННЫЕ ТАБЛИЦЫ: websites' as table_info;
+        table_info
+--------------------------
+ ДАННЫЕ ТАБЛИЦЫ: websites
+(1 строка)
+
+
+passkeeper=> SELECT * FROM websites LIMIT 5;
+ id | website_description | website_name | account_id | category_id | website_url | created_at | updated_at | encrypted_password | user_id | nickname_id | email_id
+----+---------------------+--------------+------------+-------------+-------------+------------+------------+--------------------+---------+-------------+----------
+(0 строк)
+
+
+passkeeper=>
+passkeeper=> -- 4. КОЛИЧЕСТВО ЗАПИСЕЙ В КАЖДОЙ ТАБЛИЦЕ
+passkeeper=> -- =====================================================
+passkeeper=> SELECT 'КОЛИЧЕСТВО ЗАПИСЕЙ В ТАБЛИЦАХ' as count_info;
+          count_info
+-------------------------------
+ КОЛИЧЕСТВО ЗАПИСЕЙ В ТАБЛИЦАХ
+(1 строка)
+
+
+passkeeper=>
+passkeeper=> DO $$
+passkeeper$> DECLARE
+passkeeper$>     table_rec RECORD;
+passkeeper$>     row_count INTEGER;
+passkeeper$> BEGIN
+passkeeper$>     RAISE NOTICE '';
+passkeeper$>     RAISE NOTICE 'КОЛИЧЕСТВО ЗАПИСЕЙ';
+passkeeper$>     RAISE NOTICE '=====================================================';
+passkeeper$>
+passkeeper$>     FOR table_rec IN
+passkeeper$>         SELECT tablename
+passkeeper$>         FROM pg_tables
+passkeeper$>         WHERE schemaname = 'public'
+passkeeper$>         ORDER BY tablename
+passkeeper$>     LOOP
+passkeeper$>         EXECUTE format('SELECT COUNT(*) FROM %I', table_rec.tablename) INTO row_count;
+passkeeper$>         RAISE NOTICE 'Таблица %: % записей', table_rec.tablename, row_count;
+passkeeper$>     END LOOP;
+passkeeper$> END $$;
+ЗАМЕЧАНИЕ:
+ЗАМЕЧАНИЕ:  КОЛИЧЕСТВО ЗАПИСЕЙ
+ЗАМЕЧАНИЕ:  =====================================================
+ЗАМЕЧАНИЕ:  Таблица accounts: 2 записей
+ЗАМЕЧАНИЕ:  Таблица categories: 3 записей
+ЗАМЕЧАНИЕ:  Таблица emails: 3 записей
+ЗАМЕЧАНИЕ:  Таблица event_publication: 0 записей
+ЗАМЕЧАНИЕ:  Таблица flyway_schema_history: 0 записей
+ЗАМЕЧАНИЕ:  Таблица messages: 0 записей
+ЗАМЕЧАНИЕ:  Таблица network_connections: 1 записей
+ЗАМЕЧАНИЕ:  Таблица nicknames: 3 записей
+ЗАМЕЧАНИЕ:  Таблица user_emails: 3 записей
+ЗАМЕЧАНИЕ:  Таблица user_nicknames: 3 записей
+ЗАМЕЧАНИЕ:  Таблица users: 2 записей
+ЗАМЕЧАНИЕ:  Таблица websites: 0 записей
+DO
+passkeeper=>
+passkeeper=> -- 5. ВСЕ ИНДЕКСЫ
+passkeeper=> -- =====================================================
+passkeeper=> SELECT 'ВСЕ ИНДЕКСЫ' as index_info;
+ index_info
+-------------
+ ВСЕ ИНДЕКСЫ
+(1 строка)
+
+
+passkeeper=>
+passkeeper=> SELECT
+passkeeper->     schemaname,
+passkeeper->     indexname,
+passkeeper->     tablename,
+passkeeper->     indexdef
+passkeeper-> FROM pg_indexes
+passkeeper-> WHERE schemaname = 'public'
+passkeeper-> ORDER BY tablename, indexname;
+ schemaname |          indexname           |       tablename       |                                                  indexdef
+------------+------------------------------+-----------------------+-------------------------------------------------------------------------------------------------------------
+ public     | accounts_pkey                | accounts              | CREATE UNIQUE INDEX accounts_pkey ON public.accounts USING btree (id)
+ public     | categories_pkey              | categories            | CREATE UNIQUE INDEX categories_pkey ON public.categories USING btree (id)
+ public     | emails_email_address_key     | emails                | CREATE UNIQUE INDEX emails_email_address_key ON public.emails USING btree (email_address)
+ public     | emails_pkey                  | emails                | CREATE UNIQUE INDEX emails_pkey ON public.emails USING btree (id)
+ public     | idx_emails_account_id        | emails                | CREATE INDEX idx_emails_account_id ON public.emails USING btree (account_id)
+ public     | idx_emails_category_id       | emails                | CREATE INDEX idx_emails_category_id ON public.emails USING btree (category_id)
+ public     | idx_emails_email_address     | emails                | CREATE INDEX idx_emails_email_address ON public.emails USING btree (email_address)
+ public     | event_publication_pkey       | event_publication     | CREATE UNIQUE INDEX event_publication_pkey ON public.event_publication USING btree (id)
+ public     | flyway_schema_history_pkey   | flyway_schema_history | CREATE UNIQUE INDEX flyway_schema_history_pkey ON public.flyway_schema_history USING btree (installed_rank)
+ public     | flyway_schema_history_s_idx  | flyway_schema_history | CREATE INDEX flyway_schema_history_s_idx ON public.flyway_schema_history USING btree (success)
+ public     | idx_app_messages_type_active | messages              | CREATE INDEX idx_app_messages_type_active ON public.messages USING btree (message_type, is_active)
+ public     | messages_pkey                | messages              | CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id)
+ public     | idx_netconn_account_id       | network_connections   | CREATE INDEX idx_netconn_account_id ON public.network_connections USING btree (account_id)
+ public     | idx_netconn_category_id      | network_connections   | CREATE INDEX idx_netconn_category_id ON public.network_connections USING btree (category_id)
+ public     | network_connections_pkey     | network_connections   | CREATE UNIQUE INDEX network_connections_pkey ON public.network_connections USING btree (id)
+ public     | nicknames_nickname_key       | nicknames             | CREATE UNIQUE INDEX nicknames_nickname_key ON public.nicknames USING btree (nickname)
+ public     | nicknames_pkey               | nicknames             | CREATE UNIQUE INDEX nicknames_pkey ON public.nicknames USING btree (id)
+ public     | unique_nickname_per_account  | nicknames             | CREATE UNIQUE INDEX unique_nickname_per_account ON public.nicknames USING btree (account_id, nickname)
+ public     | user_emails_pkey             | user_emails           | CREATE UNIQUE INDEX user_emails_pkey ON public.user_emails USING btree (user_id, email_id)
+ public     | user_nicknames_pkey          | user_nicknames        | CREATE UNIQUE INDEX user_nicknames_pkey ON public.user_nicknames USING btree (user_id, nickname_id)
+ public     | idx_users_account_id         | users                 | CREATE INDEX idx_users_account_id ON public.users USING btree (account_id)
+ public     | users_pkey                   | users                 | CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)
+ public     | idx_websites_account_id      | websites              | CREATE INDEX idx_websites_account_id ON public.websites USING btree (account_id)
+ public     | idx_websites_category_id     | websites              | CREATE INDEX idx_websites_category_id ON public.websites USING btree (category_id)
+ public     | websites_pkey                | websites              | CREATE UNIQUE INDEX websites_pkey ON public.websites USING btree (id)
+(25 строк)
+
+
+passkeeper=> rguments(p.oid) as arguments
+passkeeper-> FROM pg_proc p
+passkeeper-> JOIN pg_namespace n ON p.pronamespace = n.oid
+passkeeper-> WHERE n.nspname = 'public'
+passkeeper-> AND p.prokind = 'f'
+passkeeper-> ORDER BY p.proname;
+ОШИБКА:  ошибка синтаксиса (примерное положение: "rguments")
+СТРОКА 1: rguments(p.oid) as arguments
+          ^
+passkeeper=>
+passkeeper=> -- 7. ВНЕШНИЕ КЛЮЧИ И СВЯЗИ
+passkeeper=> -- =====================================================
+passkeeper=> SELECT 'ВНЕШНИЕ КЛЮЧИ' as fk_info;
+    fk_info
+---------------
+ ВНЕШНИЕ КЛЮЧИ
+(1 строка)
+
+
+passkeeper=>
+passkeeper=> SELECT
+passkeeper->     tc.table_name,
+passkeeper->     kcu.column_name,
+passkeeper->     ccu.table_name AS foreign_table_name,
+passkeeper->     ccu.column_name AS foreign_column_name,
+passkeeper->     tc.constraint_name
+passkeeper-> FROM information_schema.table_constraints AS tc
+passkeeper-> JOIN information_schema.key_column_usage AS kcu
+passkeeper->     ON tc.constraint_name = kcu.constraint_name
+passkeeper->     AND tc.table_schema = kcu.table_schema
+passkeeper-> JOIN information_schema.constraint_column_usage AS ccu
+passkeeper->     ON ccu.constraint_name = tc.constraint_name
+passkeeper->     AND ccu.table_schema = tc.table_schema
+passkeeper-> WHERE tc.constraint_type = 'FOREIGN KEY'
+passkeeper-> AND tc.table_schema = 'public'
+passkeeper-> ORDER BY tc.table_name, kcu.column_name;
+     table_name      | column_name | foreign_table_name | foreign_column_name |           constraint_name
+---------------------+-------------+--------------------+---------------------+--------------------------------------
+ accounts            | email_id    | emails             | id                  | fk_accounts_email_id
+ emails              | account_id  | accounts           | id                  | emails_account_id_fkey
+ emails              | category_id | categories         | id                  | emails_category_id_fkey
+ emails              | user_id     | users              | id                  | emails_user_id_fkey
+ network_connections | account_id  | accounts           | id                  | network_connections_account_id_fkey
+ network_connections | category_id | categories         | id                  | network_connections_category_id_fkey
+ network_connections | email_id    | emails             | id                  | network_connections_email_id_fkey
+ network_connections | nickname_id | nicknames          | id                  | network_connections_nickname_id_fkey
+ network_connections | user_id     | users              | id                  | network_connections_user_id_fkey
+ nicknames           | account_id  | accounts           | id                  | nicknames_account_id_fkey
+ nicknames           | user_id     | users              | id                  | nicknames_user_id_fkey
+ user_emails         | email_id    | emails             | id                  | user_emails_email_id_fkey
+ user_emails         | user_id     | users              | id                  | user_emails_user_id_fkey
+ user_nicknames      | nickname_id | nicknames          | id                  | user_nicknames_nickname_id_fkey
+ user_nicknames      | user_id     | users              | id                  | user_nicknames_user_id_fkey
+ users               | account_id  | accounts           | id                  | users_account_id_fkey
+ websites            | account_id  | accounts           | id                  | websites_account_id_fkey
+ websites            | category_id | categories         | id                  | websites_category_id_fkey
+ websites            | email_id    | emails             | id                  | websites_email_id_fkey
+ websites            | nickname_id | nicknames          | id                  | websites_nickname_id_fkey
+ websites            | user_id     | users              | id                  | websites_user_id_fkey
+(21 строка)
+
+
+passkeeper=>
+passkeeper=> -- 8. ПЕРВИЧНЫЕ КЛЮЧИ
+passkeeper=> -- =====================================================
+passkeeper=> SELECT 'ПЕРВИЧНЫЕ КЛЮЧИ' as pk_info;
+     pk_info
+-----------------
+ ПЕРВИЧНЫЕ КЛЮЧИ
+(1 строка)
+
+
+passkeeper=>
+passkeeper=> SELECT
+passkeeper->     tc.table_name,
+passkeeper->     kcu.column_name,
+passkeeper->     tc.constraint_name
+passkeeper-> FROM information_schema.table_constraints tc
+passkeeper-> JOIN information_schema.key_column_usage kcu
+passkeeper->     ON tc.constraint_name = kcu.constraint_name
+passkeeper->     AND tc.table_schema = kcu.table_schema
+passkeeper-> WHERE tc.constraint_type = 'PRIMARY KEY'
+passkeeper-> AND tc.table_schema = 'public'
+passkeeper-> ORDER BY tc.table_name, kcu.ordinal_position;
+
+      table_name       |  column_name   |      constraint_name
+-----------------------+----------------+----------------------------
+ accounts              | id             | accounts_pkey
+ categories            | id             | categories_pkey
+ emails                | id             | emails_pkey
+ event_publication     | id             | event_publication_pkey
+ flyway_schema_history | installed_rank | flyway_schema_history_pkey
+ messages              | id             | messages_pkey
+ network_connections   | id             | network_connections_pkey
+ nicknames             | id             | nicknames_pkey
+ user_emails           | user_id        | user_emails_pkey
+ user_emails           | email_id       | user_emails_pkey
+ user_nicknames        | user_id        | user_nicknames_pkey
+ user_nicknames        | nickname_id    | user_nicknames_pkey
+ users                 | id             | users_pkey
+ websites              | id             | websites_pkey
+(14 строк)
