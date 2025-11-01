@@ -15,6 +15,7 @@ class EmailRoutes {
     router.get('/', _getEmailsByUserId);
     router.get('/<id>/password', _getDecryptedPasswordById);
     router.post('/add', _addEmail);
+    router.delete('/delete/<id>', _deleteEmail);
 
     return router;
   }
@@ -186,5 +187,28 @@ class EmailRoutes {
         headers: {'Content-Type': 'application/json'},
       );
     }
+  }
+
+  Future<Response> _deleteEmail(Request request, String id) async {
+    final userId = request.context['user_id'] as int?;
+    if (userId == null) {
+      return Response.forbidden(jsonEncode({'error': 'Нет доступа'}));
+    }
+  
+    final emailId = int.tryParse(id);
+    if (emailId == null) {
+      return Response.badRequest(
+          body: jsonEncode(
+              {'❌ error': 'Неверный ID'}),
+          headers: {'Content-Type': 'application/json'},
+        );
+    }
+  
+    await connection.execute(
+      Sql.named('DELETE FROM emails WHERE id = @id AND user_id = @userId'),
+      parameters: {'id': emailId, 'userId': userId},
+    );
+  
+    return Response.ok(jsonEncode({'message': 'Email удалён'}));
   }
 }

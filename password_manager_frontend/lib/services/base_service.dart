@@ -95,6 +95,27 @@ class BaseService {
       if (headers != null) ...headers,
     };
   }
+
+  
+  Future<dynamic> delete(String endpoint, {Map<String, String>? headers}) async {
+    final uri = buildUri(endpoint);
+    print('📤 DELETE → $uri');
+    try {
+      final mergedHeaders = await _mergeHeaders(headers);
+      final response = await http
+          .delete(uri, headers: mergedHeaders)
+          .timeout(const Duration(seconds: 10));
+      return _processResponse(response);
+    } on SocketException {
+      throw NetworkException('Нет подключения к интернету');
+    } on TimeoutException {
+      throw TimeoutException('Превышено время ожидания запроса');
+    } catch (e) {
+      print('❌ Ошибка DELETE-запроса: $e');
+      rethrow;
+    }
+  }
+
 }
 
 // Исключения
@@ -133,3 +154,5 @@ class NetworkException implements Exception {
   @override
   String toString() => 'NetworkException: $message';
 }
+
+
