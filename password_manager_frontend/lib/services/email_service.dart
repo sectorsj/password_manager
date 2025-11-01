@@ -24,6 +24,11 @@ class EmailService extends BaseService {
     return 'Почта добавлена успешно';
   }
 
+  
+  Future<void> deleteEmail(int emailId) async {
+    await delete('/emails/delete/$emailId');
+  }
+
   Future<String> getDecryptedPassword(int id) async {
     final response = await get('/emails/$id/password');
     if (response is Map && response.containsKey('decrypted_password')) {

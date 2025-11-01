@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
+import 'package:password_manager_frontend/models/hive/local_email.dart';
 import 'package:password_manager_frontend/pages/home_page.dart';
 import 'package:password_manager_frontend/utils/ui_routes.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +10,16 @@ import 'package:password_manager_frontend/pages/login_page.dart';
 import 'package:password_manager_frontend/pages/registration_page.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
 
-void main() {
+Future<void> main() async {
+  // Обязательно: инициализация Hive для Flutter
+  await Hive.initFlutter();
+
+  // Регистрация адаптера
+  Hive.registerAdapter(LocalEmailAdapter());
+
+  // Теперь можно открывать бокс
+  final box = await Hive.openBox<LocalEmail>('emails');
+
   runApp(
     MultiProvider(
       providers: [
