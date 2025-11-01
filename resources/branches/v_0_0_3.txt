@@ -181,3 +181,702 @@ $$ LANGUAGE plpgsql;
    - Добавить кнопки удаления и соответствующую логику в пользовательском интерфейсе.
 
 Если нужно, я могу помочь с реализацией серверного API или фронтенда.
+
+
+
+
+sectorsj: 
+запрос в бд по удалению эл. почты готов, теперь можно реализовать иконку "корзины"
+для удаления записи эл. почты из бд, с одним условием,
+удалить почту добавленую при создании аккаунта нельзя.
+
+Это для того чтобы не возникло ситуации что все почты удалят и не останется почты закрепленной за аккаунтом.
+
+GitHub Copilot:
+Для реализации иконки "корзины" с функционалом удаления записи электронной почты из базы данных,
+с учетом ограничения на удаление почты, добавленной при создании аккаунта, можно сделать следующее:
+
+### Шаги реализации:
+1. **Добавить иконку "корзины" в интерфейс**:
+   - Добавьте кнопку с иконкой "корзины" в таблицу `DataTable` для каждой строки.
+
+2. **Проверить, можно ли удалить почту**:
+   - Перед вызовом API для удаления проверьте, не является ли почта основной (добавленной при создании аккаунта).
+
+3. **Вызвать API для удаления**:
+   - Если почта может быть удалена, отправьте запрос на сервер для удаления.
+
+4. **Обновить список почт после удаления**:
+   - После успешного удаления обновите список почт в интерфейсе.
+
+---
+
+### Пример кода для обновления emails_tab.dart:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Для копирования пароля
+import 'package:password_manager_frontend/models/email.dart';
+import 'package:password_manager_frontend/services/auth_service.dart';
+import 'package:password_manager_frontend/services/email_service.dart';
+import 'package:password_manager_frontend/widgets/add_email_form_widget.dart';
+import 'package:provider/provider.dart';
+
+class EmailsTab extends StatefulWidget {
+  const EmailsTab({super.key});
+
+  @override
+  _EmailsTabState createState() => _EmailsTabState();
+}
+
+class _EmailsTabState extends State<EmailsTab> {
+  final EmailService emailService = EmailService();
+  List<Email> _emails = [];
+  final Map<int, bool> _showPasswordMap = {};
+  final Map<int, String> _decryptedPasswords = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmails();
+  }
+
+  Future<void> _loadEmails() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    int userId = authService.userId;
+
+    try {
+      List<Email> emails = await emailService.getEmails(userId);
+      if (!mounted) return;
+      setState(() {
+        _emails = emails;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      print('Ошибка при загрузке списка почт: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content:
+                Text('Не удалось загрузить список электронных почт (emails)')),
+      );
+    }
+  }
+
+  Future<void> _deleteEmail(int emailId, bool isPrimary) async {
+    if (isPrimary) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Нельзя удалить основную почту, закрепленную за аккаунтом'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await emailService.deleteEmail(emailId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Почта успешно удалена')),
+      );
+      _loadEmails(); // Обновляем список почт
+    } catch (e) {
+      if (!mounted) return;
+      print('Ошибка при удалении почты: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось удалить почту')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Электронные почты'),
+        actions: [
+          IconButton(
+              icon: const Icon(Icons.add), onPressed: () => _addEmail(context)),
+        ],
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text('№')),
+            DataColumn(label: Text('Email')),
+            DataColumn(label: Text('Пароль')),
+            DataColumn(label: Text('Описание')),
+            DataColumn(label: Text('Действия')), // Новый столбец для действий
+          ],
+          rows: _emails.asMap().entries.map((entry) {
+            final index = entry.key;
+            final email = entry.value;
+            final isPrimary = email.isPrimary; // Добавьте поле isPrimary в модель Email
+            final isVisible = _showPasswordMap[index] ?? false;
+            final decryptedPassword = _decryptedPasswords[index] ?? '';
+
+            return DataRow(
+              cells: [
+                DataCell(Text((index + 1).toString())),
+                DataCell(Text(email.emailAddress)),
+                DataCell(Row(
+                  children: [
+                    Text(
+                      isVisible
+                          ? (decryptedPassword.isNotEmpty
+                              ? decryptedPassword
+                              : '[пароль загружается]')
+                          : '****',
+                    ),
+                    IconButton(
+                        icon: Icon(isVisible
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                        onPressed: () =>
+                            _togglePasswordVisibility(index, email)),
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      onPressed: () {
+                        Clipboard.setData(
+                          ClipboardData(text: decryptedPassword),
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Пароль скопирован')),
+                        );
+                      },
+                    ),
+                  ],
+                )),
+                DataCell(Text(email.emailDescription ?? '')),
+                DataCell(Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      color: isPrimary ? Colors.grey : Colors.red,
+                      onPressed: () => _deleteEmail(email.id, isPrimary),
+                    ),
+                  ],
+                )),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+```
+
+---
+
+### Изменения:
+1. **Добавлен столбец "Действия"**:
+   - В таблицу добавлен столбец с кнопкой "корзина" для удаления.
+
+2. **Проверка на основную почту**:
+   - Перед удалением проверяется, является ли почта основной (`isPrimary`).
+
+3. **Обновление списка после удаления**:
+   - После успешного удаления вызывается `_loadEmails()` для обновления списка.
+
+4. **Поле `isPrimary` в модели `Email`**:
+   - Убедитесь, что в модели `Email` есть поле `isPrimary`, которое указывает, является ли почта основной.
+
+---
+
+### Пример метода `deleteEmail` в `EmailService`:
+```dart
+Future<void> deleteEmail(int emailId) async {
+  final response = await delete('/emails/$emailId');
+  if (response.statusCode != 200) {
+    throw Exception('Ошибка при удалении почты');
+  }
+}
+```
+
+---
+
+Теперь пользователь сможет удалять почты через интерфейс,
+но основная почта, закрепленная за аккаунтом, будет защищена от удаления.
+
+sectorsj: может можно разбить файл emails_tab.dart с учетом принципа SOLID, 
+к примеру может можно использовать миксины в этом файле. если это избыточно то скажи, что не нужно
+
+GitHub Copilot: Разбивать файл emails_tab.dart на основе принципов SOLID может быть полезно, если вы хотите улучшить читаемость, тестируемость и повторное использование кода. Однако, в данном случае, файл не слишком большой, и его разделение может быть избыточным, если вы не планируете дальнейшее расширение функционала. 
+
+Если вы всё же хотите улучшить структуру, можно выделить несколько частей в отдельные компоненты или использовать миксины для разделения логики. Вот несколько рекомендаций:
+
+---
+
+### 1. **Применение принципа SRP (Single Responsibility Principle)**:
+Каждый класс или файл должен отвечать за одну задачу. В данном случае можно выделить:
+- **UI-компоненты** (например, таблица с почтами).
+- **Логику работы с данными** (например, загрузка, удаление, расшифровка паролей).
+
+---
+
+### 2. **Разделение на компоненты**:
+Можно выделить следующие части:
+- **Таблица почт**: Вынести таблицу `DataTable` в отдельный виджет.
+- **Логика работы с почтами**: Вынести методы `_loadEmails`, `_togglePasswordVisibility`, `_deleteEmail` в миксин или отдельный класс.
+
+---
+
+### 3. **Пример разделения**:
+
+#### 3.1. Вынесение таблицы в отдельный виджет:
+Создайте отдельный файл `email_table_widget.dart`:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/models/email.dart';
+
+class EmailTableWidget extends StatelessWidget {
+  final List<Email> emails;
+  final Map<int, bool> showPasswordMap;
+  final Map<int, String> decryptedPasswords;
+  final Function(int index, Email email) onTogglePasswordVisibility;
+  final Function(BuildContext context, Email email) onShowDetails;
+  final Function(int emailId, bool isPrimary) onDeleteEmail;
+
+  const EmailTableWidget({
+    super.key,
+    required this.emails,
+    required this.showPasswordMap,
+    required this.decryptedPasswords,
+    required this.onTogglePasswordVisibility,
+    required this.onShowDetails,
+    required this.onDeleteEmail,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('№')),
+          DataColumn(label: Text('Email')),
+          DataColumn(label: Text('Пароль')),
+          DataColumn(label: Text('Описание')),
+          DataColumn(label: Text('Действия')),
+        ],
+        rows: emails.asMap().entries.map((entry) {
+          final index = entry.key;
+          final email = entry.value;
+          final isVisible = showPasswordMap[index] ?? false;
+          final decryptedPassword = decryptedPasswords[index] ?? '';
+
+          return DataRow(
+            cells: [
+              DataCell(Text((index + 1).toString())),
+              DataCell(Text(email.emailAddress)),
+              DataCell(Row(
+                children: [
+                  Text(
+                    isVisible
+                        ? (decryptedPassword.isNotEmpty
+                            ? decryptedPassword
+                            : '[пароль загружается]')
+                        : '****',
+                  ),
+                  IconButton(
+                    icon: Icon(isVisible
+                        ? Icons.visibility_off
+                        : Icons.visibility),
+                    onPressed: () => onTogglePasswordVisibility(index, email),
+                  ),
+                ],
+              )),
+              DataCell(
+                IconButton(
+                  icon: const Icon(Icons.info_outline),
+                  onPressed: () => onShowDetails(context, email),
+                ),
+              ),
+              DataCell(
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  color: email.isPrimary ? Colors.grey : Colors.red,
+                  onPressed: () => onDeleteEmail(email.id, email.isPrimary),
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+```
+
+Теперь в emails_tab.dart можно использовать этот виджет:
+
+```dart
+import 'package:password_manager_frontend/widgets/email_table_widget.dart';
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Электронные почты'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () => _addEmail(context),
+        ),
+      ],
+    ),
+    body: EmailTableWidget(
+      emails: _emails,
+      showPasswordMap: _showPasswordMap,
+      decryptedPasswords: _decryptedPasswords,
+      onTogglePasswordVisibility: _togglePasswordVisibility,
+      onShowDetails: _showEmailDetails,
+      onDeleteEmail: _deleteEmail,
+    ),
+  );
+}
+```
+
+---
+
+#### 3.2. Вынесение логики в миксин:
+Создайте миксин `EmailLogicMixin` для работы с почтами:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:password_manager_frontend/models/email.dart';
+import 'package:password_manager_frontend/services/email_service.dart';
+
+mixin EmailLogicMixin<T extends StatefulWidget> on State<T> {
+  final EmailService emailService = EmailService();
+  List<Email> emails = [];
+  final Map<int, bool> showPasswordMap = {};
+  final Map<int, String> decryptedPasswords = {};
+
+  Future<void> loadEmails(int userId) async {
+    try {
+      List<Email> loadedEmails = await emailService.getEmails(userId);
+      if (!mounted) return;
+      setState(() {
+        emails = loadedEmails;
+      });
+    } catch (e) {
+      print('Ошибка при загрузке списка почт: $e');
+    }
+  }
+
+  Future<void> togglePasswordVisibility(int index, Email email) async {
+    final isVisible = showPasswordMap[index] ?? false;
+
+    if (!isVisible && !decryptedPasswords.containsKey(index)) {
+      try {
+        final decrypted = await emailService.getDecryptedPassword(email.id);
+        if (!mounted) return;
+        setState(() {
+          decryptedPasswords[index] = decrypted;
+          showPasswordMap[index] = true;
+        });
+      } catch (e) {
+        print('Ошибка при расшифровке пароля: $e');
+      }
+    } else {
+      if (!mounted) return;
+      setState(() {
+        showPasswordMap[index] = !isVisible;
+      });
+    }
+  }
+}
+```
+
+Теперь в emails_tab.dart можно подключить миксин:
+
+```dart
+class _EmailsTabState extends State<EmailsTab> with EmailLogicMixin {
+  @override
+  void initState() {
+    super.initState();
+    final authService = Provider.of<AuthService>(context, listen: false);
+    loadEmails(authService.userId);
+  }
+}
+```
+
+---
+
+### Итог:
+- Если вы хотите улучшить читаемость и повторное использование, разделение на компоненты и использование миксинов будет полезным.
+- Если файл не будет сильно расширяться, текущее состояние вполне допустимо, и разделение может быть избыточным.
+
+
+Давай еще раз,...
+У меня есть 3 таба:
+
+почты
+сетевые подключения
+вебсайты
+у них у всех есть 4 одинаковых метода по своей сути:
+
+Загрузка (почт | сетевых подключений | вебсайтов)
+ПоказДеталей (почт | сетевых подключений | вебсайтов)
+Кнопка "Глазик" (скрывающая/показывающая пароль)
+Добавление (почты | сетевого подключения | вебсайта)
+таким образом я думаю миксины будут оправданы.
+И так, что мне нужно:
+
+переписать текущие классы табов (*_tab.dart) с учетом применения миксин
+создать классы миксин текущих методов (загрузка, показ, кнопка "глаз", добавление)
+создать класс миксины для удаления (почты, сет. подкл, вебсайта) и добавить его во все табы (*_tab.dart)
+Хорошо, давайте перепишем ваши классы табов с использованием миксинов. Мы создадим миксины для каждого из повторяющихся методов (загрузка, показ деталей, кнопка "глаз", добавление) и добавим миксин для удаления.
+
+1. Создание миксинов
+1.1. Миксин для загрузки данных
+
+
+import 'package:flutter/material.dart';
+
+mixin DataLoadingMixin<T> on State<StatefulWidget> {
+  Future<void> loadData({
+    required Future<List<T>> Function() fetchData,
+    required void Function(List<T>) onDataLoaded,
+    required BuildContext context,
+    required String errorMessage,
+  }) async {
+    try {
+      final data = await fetchData();
+      if (!mounted) return;
+      onDataLoaded(data);
+    } catch (e) {
+      if (!mounted) return;
+      print('Ошибка при загрузке данных: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    }
+  }
+}
+
+1.2. Миксин для показа деталей
+
+import 'package:flutter/material.dart';
+
+mixin DetailsDialogMixin<T> on State<StatefulWidget> {
+  void showDetailsDialog({
+    required BuildContext context,
+    required String title,
+    required List<Widget> details,
+  }) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: details,
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Закрыть'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+1.3. Миксин для кнопки "глаз"
+
+import 'package:flutter/material.dart';
+
+mixin PasswordVisibilityMixin<T> on State<StatefulWidget> {
+  final Map<int, bool> showPasswordMap = {};
+  final Map<int, String> decryptedPasswords = {};
+
+  Future<void> togglePasswordVisibility({
+    required int index,
+    required Future<String> Function() fetchPassword,
+    required BuildContext context,
+  }) async {
+    final isVisible = showPasswordMap[index] ?? false;
+
+    if (!isVisible && !decryptedPasswords.containsKey(index)) {
+      try {
+        final decrypted = await fetchPassword();
+        if (!mounted) return;
+        setState(() {
+          decryptedPasswords[index] = decrypted;
+          showPasswordMap[index] = true;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        print('Ошибка при расшифровке пароля: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось расшифровать пароль')),
+        );
+      }
+    } else {
+      if (!mounted) return;
+      setState(() {
+        showPasswordMap[index] = !isVisible;
+      });
+    }
+  }
+}
+
+1.4. Миксин для добавления
+
+import 'package:flutter/material.dart';
+
+mixin AddItemMixin<T> on State<StatefulWidget> {
+  Future<void> addItem({
+    required BuildContext context,
+    required Widget Function() buildForm,
+    required Future<void> Function() onItemAdded,
+  }) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => buildForm()),
+    );
+    await onItemAdded();
+  }
+}
+
+1.5. Миксин для удаления
+
+import 'package:flutter/material.dart';
+
+mixin DeleteItemMixin<T> on State<StatefulWidget> {
+  Future<void> deleteItem({
+    required Future<void> Function() deleteFunction,
+    required Future<void> Function() onItemDeleted,
+    required BuildContext context,
+    required String errorMessage,
+  }) async {
+    try {
+      await deleteFunction();
+      await onItemDeleted();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Элемент успешно удален')),
+      );
+    } catch (e) {
+      print('Ошибка при удалении элемента: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    }
+  }
+}
+
+2. Переписанные классы табов
+2.1. EmailsTab
+
+class _EmailsTabState extends State<EmailsTab>
+    with
+        DataLoadingMixin<Email>,
+        DetailsDialogMixin,
+        PasswordVisibilityMixin,
+        AddItemMixin,
+        DeleteItemMixin {
+  final EmailService emailService = EmailService();
+  List<Email> _emails = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEmails();
+  }
+
+  Future<void> _loadEmails() async {
+    await loadData(
+      fetchData: () => emailService.getEmails(
+        Provider.of<AuthService>(context, listen: false).userId,
+      ),
+      onDataLoaded: (emails) {
+        setState(() {
+          _emails = emails;
+        });
+      },
+      context: context,
+      errorMessage: 'Не удалось загрузить список почт',
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Электронные почты'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => addItem(
+              context: context,
+              buildForm: () => AddEmailFormWidget(),
+              onItemAdded: _loadEmails,
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text('№')),
+            DataColumn(label: Text('Email')),
+            DataColumn(label: Text('Пароль')),
+            DataColumn(label: Text('Описание')),
+          ],
+          rows: _emails.asMap().entries.map((entry) {
+            final index = entry.key;
+            final email = entry.value;
+
+            return DataRow(
+              cells: [
+                DataCell(Text('${index + 1}')),
+                DataCell(Text(email.emailAddress)),
+                DataCell(Row(
+                  children: [
+                    Text(showPasswordMap[index] ?? false
+                        ? decryptedPasswords[index] ?? '****'
+                        : '****'),
+                    IconButton(
+                      icon: Icon(showPasswordMap[index] ?? false
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                      onPressed: () => togglePasswordVisibility(
+                        index: index,
+                        fetchPassword: () =>
+                            emailService.getDecryptedPassword(email.id),
+                        context: context,
+                      ),
+                    ),
+                  ],
+                )),
+                DataCell(
+                  IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    onPressed: () => showDetailsDialog(
+                      context: context,
+                      title: email.emailAddress,
+                      details: [
+                        Text('Описание: ${email.emailDescription ?? '—'}'),
+                        Text('Категория: ${email.categoryId}'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+

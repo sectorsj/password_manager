@@ -1,11 +1,16 @@
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Для копирования пароля
 import 'package:password_manager_frontend/models/email.dart';
 import 'package:password_manager_frontend/services/auth_service.dart';
 import 'package:password_manager_frontend/services/email_service.dart';
 import 'package:password_manager_frontend/widgets/add_email_form_widget.dart';
 import 'package:provider/provider.dart';
+
+import '../mixins/add_item_mixin.dart';
+import '../mixins/data_loading_mixin.dart';
+import '../mixins/delete_item_mixin.dart';
+import '../mixins/details_dialog_mixin.dart';
+import '../mixins/password_visibility_mixin.dart';
 
 class EmailsTab extends StatefulWidget {
   const EmailsTab({super.key});
@@ -14,11 +19,16 @@ class EmailsTab extends StatefulWidget {
   _EmailsTabState createState() => _EmailsTabState();
 }
 
-class _EmailsTabState extends State<EmailsTab> {
+class _EmailsTabState extends State<EmailsTab>
+  with
+    DataLoadingMixin,
+    DetailsDialogMixin,
+    PasswordVisibilityMixin,
+    AddItemMixin,
+    DeleteItemMixin {
+
   final EmailService emailService = EmailService();
   List<Email> _emails = [];
-  final Map<int, bool> _showPasswordMap = {};
-  final Map<int, String> _decryptedPasswords = {};
 
   @override
   void initState() {
@@ -27,100 +37,20 @@ class _EmailsTabState extends State<EmailsTab> {
   }
 
   Future<void> _loadEmails() async {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    int userId = authService.userId;
-
-    try {
-      List<Email> emails = await emailService.getEmails(userId);
-      if (!mounted) return;
-      setState(() {
-        _emails = emails;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      print('Ошибка при загрузке списка почт: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text('Не удалось загрузить список электронных почт (emails)')),
-      );
-    }
-  }
-
-  Future<void> _togglePasswordVisibility(int index, Email email) async {
-    final isVisible = _showPasswordMap[index] ?? false;
-
-    if (!isVisible && !_decryptedPasswords.containsKey(index)) {
-      try {
-        final decrypted = await emailService.getDecryptedPassword(email.id);
-        if (!mounted) return;
+    await loadData(
+      fetchData: () => emailService.getEmails(
+        Provider.of<AuthService>(context, listen: false).userId,
+      ),
+      onDataLoaded: (emails) {
         setState(() {
-          _decryptedPasswords[index] = decrypted;
-          _showPasswordMap[index] = true;
+          _emails = emails;
         });
-      } catch (e) {
-        if (!mounted) return;
-        print('Ошибка при расшифровке пароля: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Не удалось расшифровать пароль')),
-        );
-      }
-    } else {
-      if (!mounted) return;
-      setState(() {
-        _showPasswordMap[index] = !isVisible;
-      });
-    }
-  }
-
-  void _showEmailDetails(BuildContext context, Email email) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(email.emailAddress),
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Описание почты: ${email.emailDescription}'),
-              // Text('Salt: ${email.salt}'),
-              Text('Категория: ${email.categoryId}'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: const Text('Закрыть'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
       },
+      context: context,
+      errorMessage: 'Не удалось загрузить список почт',
     );
   }
 
-  void _addEmail(BuildContext context) async {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    int accountId = authService.accountId;
-    int categoryId = authService.categoryId;
-    int userId = authService.userId;
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) => AddEmailFormWidget(
-                accountId: accountId,
-                // categoryId: categoryId,
-                categoryId: 2,
-                //  // 💡 вручную ставим "почты"
-                // TODO внедрить TabController в HomePage и связывать вкладки с ID категорий.
-                userId: userId,
-              )),
-    );
-    _loadEmails();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,7 +59,15 @@ class _EmailsTabState extends State<EmailsTab> {
         title: const Text('Электронные почты'),
         actions: [
           IconButton(
-              icon: const Icon(Icons.add), onPressed: () => _addEmail(context)),
+            icon: const Icon(Icons.add),
+            onPressed: () => addItem(
+              context: context,
+              buildForm: () => AddEmailFormWidget(
+                accountId: Provider.of<AuthService>(context, listen: false).accountId,
+              ),
+              onItemAdded: _loadEmails,
+            ),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -144,51 +82,53 @@ class _EmailsTabState extends State<EmailsTab> {
           rows: _emails.asMap().entries.map((entry) {
             final index = entry.key;
             final email = entry.value;
-            // Получаем текущее состояние отображения пароля
-            final isVisible = _showPasswordMap[index] ?? false;
-            final decryptedPassword = _decryptedPasswords[index] ?? '';
 
             return DataRow(
               cells: [
-                DataCell(Text((index + 1).toString())),
+                DataCell(Text('${index + 1}')),
                 DataCell(Text(email.emailAddress)),
-                // email_address
                 DataCell(Row(
                   children: [
-                    // Отображаем пароль или скрываем его
-                    Text(
-                      isVisible
-                          ? (decryptedPassword.isNotEmpty
-                              ? decryptedPassword
-                              : '[пароль загружается]')
-                          : '****',
-                    ),
+                    Text(showPasswordMap[index] ?? false
+                        ? decryptedPasswords[index] ?? '****'
+                        : '****'),
                     IconButton(
-                        icon: Icon(isVisible
-                            ? Icons.visibility_off
-                            : Icons.visibility),
-                        onPressed: () =>
-                            _togglePasswordVisibility(index, email)),
-                    IconButton(
-                      icon: const Icon(Icons.copy),
-                      onPressed: () {
-                        Clipboard.setData(
-                          ClipboardData(text: decryptedPassword),
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Пароль скопирован')),
-                        );
-                      },
+                      icon: Icon(showPasswordMap[index] ?? false
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                      onPressed: () => togglePasswordVisibility(
+                        index: index,
+                        fetchPassword: () =>
+                            emailService.getDecryptedPassword(email.id),
+                        context: context,
+                      ),
                     ),
                   ],
                 )),
                 DataCell(
                   IconButton(
                     icon: const Icon(Icons.info_outline),
-                    onPressed: () => _showEmailDetails(context, email),
+                    onPressed: () => showDetailsDialog(
+                      context: context,
+                      title: email.emailAddress,
+                      details: [
+                        Text('Описание: ${email.emailDescription ?? '—'}'),
+                        Text('Категория: ${email.categoryId}'),
+                      ],
+                    ),
                   ),
                 ),
-                // email_description
+                DataCell(
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () => deleteItem(
+                      deleteFunction: () => emailService.deleteEmail(email.id),
+                      onItemDeleted: _loadEmails,
+                      context: context,
+                      errorMessage: 'Не удалось удалить email'
+                    ),
+                  ),
+                ),
               ],
             );
           }).toList(),

@@ -3,6 +3,8 @@ import 'package:common_utility_package/encryption_utility.dart';
 import 'package:common_utility_package/jwt_util.dart';
 import 'package:shelf/shelf.dart';
 
+/// тест класса Extractor
+
 /// Middleware для проверки JWT и извлечения AES ключа
 Middleware baseAuthMiddleware() {
   return (Handler innerHandler) {
